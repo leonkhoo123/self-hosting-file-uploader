@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>File Upload</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin: 50px;
+        }
+        #uploadForm {
+            border: 2px dashed #007bff;
+            padding: 20px;
+            width: 300px;
+            margin: auto;
+        }
+        input[type="file"] {
+            margin: 10px 0;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+
+    <h2>Upload Files</h2>
+    <p id="healthcheck"></p>
+    <form id="uploadForm">
+        <input type="file" id="fileInput" multiple required> <!-- Added 'multiple' -->
+        <button type="submit">Upload</button>
+    </form>
+    <p id="message"></p>    
+
+    <!-- Link external JavaScript -->
+    <script src="script.js"></script>
+
+</body>
+</html>
