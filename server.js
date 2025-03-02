@@ -14,7 +14,14 @@ app.use(express.static("public"));
 const upload = multer({ 
     storage: multer.diskStorage({
         destination: (req, file, cb) => {
-            cb(null, "uploads/"); // Ensure this directory exists
+            const uploadDir = "uploads/";
+
+            // Ensure the directory exists
+            if (!fs.existsSync(uploadDir)) {
+                fs.mkdirSync(uploadDir, { recursive: true });
+            }
+
+            cb(null, uploadDir);
         },
         filename: (req, file, cb) => {
             cb(null, file.originalname);
@@ -23,9 +30,11 @@ const upload = multer({
 });
 
 // Samba client setup
+const smb_host = process.env.SMB_HOST || "localhost"
+const smb_address = `//${smb_host}/share_space`
 const client = new SambaClient({
-    address: process.env.SMB_ADDRESS || "//192.168.1.6/share_space",
-    username: process.env.SMB_USERNAME || "publicuser",
+    address: smb_address,
+    username: process.env.SMB_USERNAME || "username",
     password: process.env.SMB_PASSWORD || "password"
 });
 
@@ -55,9 +64,10 @@ app.post("/upload", upload.single("file"), async (req, res) => {
     try {
         // Upload file to SMB share
         await client.sendFile(tempPath, fileName);
+        console.log(`${fileName} uploaded to ${smb_address}`);
         res.status(200).json({ message: "File uploaded successfully." });
     } catch (err) {
-        console.error("Upload failed:", err);
+        console.error(`${fileName} upload failed:`, err);
         res.status(500).json({ error: "File upload failed." });
     } finally {
         // Clean up temporary file
@@ -66,5 +76,5 @@ app.post("/upload", upload.single("file"), async (req, res) => {
 });
 
 app.listen(PORT, () => {
-    console.log(`Server is running on http://localhost:${PORT}`);
+    console.log(`Server is running on localhost:${PORT}`);
 });

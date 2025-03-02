@@ -1,7 +1,14 @@
 document.addEventListener("DOMContentLoaded", function () {
     // Get the current hostname dynamically
-    const host = window.location.hostname;
-    const healthCheckURL = `http://${host}:3000/healthcheck`;
+    // ${protocol}s or ${protocol} protocol dynamically
+    const isHttps = window.location.href.startsWith("https");
+    const protocol = isHttps
+        ? "https"
+        : "http";
+
+    // const protocol = window.location.protocol;
+    const host = window.location.host;
+    const healthCheckURL = `${protocol}://${host}/healthcheck`;
 
     fetch(healthCheckURL, { method: "GET" })
         .then(response => response.json()) // Parse JSON response
@@ -23,7 +30,7 @@ document.addEventListener("DOMContentLoaded", function () {
             return;
         }
 
-        const apiURL = `http://${host}:3000/upload`;
+        const apiURL = `${protocol}://${host}/upload`;
 
         const files = fileInput.files;
         let uploadedCount = 0;
