@@ -7,27 +7,20 @@ const fs = require("fs");
 const app = express();
 const PORT = 3000;
 
+// Middleware to parse JSON body
+app.use(express.json());
+
 // Serve static files from the 'public' directory
 app.use(express.static("public"));
 
-// Multer setup (store file temporarily on disk before uploading to SMB)
-const upload = multer({ 
-    storage: multer.diskStorage({
-        destination: (req, file, cb) => {
-            const uploadDir = "uploads/";
+// Setup a temporary storage directory for chunks
+const uploadDir = "uploads/";
+if (!fs.existsSync(uploadDir)) {
+    fs.mkdirSync(uploadDir, { recursive: true });
+}
 
-            // Ensure the directory exists
-            if (!fs.existsSync(uploadDir)) {
-                fs.mkdirSync(uploadDir, { recursive: true });
-            }
-
-            cb(null, uploadDir);
-        },
-        filename: (req, file, cb) => {
-            cb(null, file.originalname);
-        }
-    })
-});
+// Multer setup (stores file chunks temporarily)
+const upload = multer({ dest: uploadDir });
 
 // Samba client setup
 const smb_host = process.env.SMB_HOST || "localhost"
@@ -38,43 +31,72 @@ const client = new SambaClient({
     password: process.env.SMB_PASSWORD || "password"
 });
 
-
 // Health check route to verify SMB connection
 app.get("/healthcheck", async (req, res) => {
     try {
-        await client.list("/healthcheck"); // Try listing files in the share
+        await client.list("/healthcheck");
         res.status(200).json({ message: "SMB connection is healthy." });
-
     } catch (err) {
         console.error("SMB Health Check Failed:", err);
         res.status(500).json({ message: "SMB connection failed." });
-
     }
 });
 
-// File upload endpoint
-app.post("/upload", upload.single("file"), async (req, res) => {
-    if (!req.file) {
-        return res.status(400).json({ message: "No file uploaded." });
+// Handle chunked file uploads
+app.post("/upload-chunk", upload.single("chunk"), async (req, res) => {
+    const { originalName, chunkIndex, totalChunks } = req.body;
+
+    if (!req.file || !originalName || chunkIndex === undefined || !totalChunks) {
+        return res.status(400).json({ message: "Invalid chunk data" });
     }
 
-    const tempPath = req.file.path;
-    const fileName = req.file.originalname;
+    const chunkPath = path.join(uploadDir, `${originalName}.part${chunkIndex}`);
+    fs.renameSync(req.file.path, chunkPath);
 
+    console.log(`Received chunk ${chunkIndex} of ${totalChunks} for ${originalName}`);
+
+    // Check if all chunks are received
+    if (fs.readdirSync(uploadDir).filter(f => f.startsWith(originalName + ".part")).length == totalChunks) {
+        console.log(`Waiting for FileSystem`)
+        // setTimeout(async () => {
+        //     await mergeChunks(originalName, totalChunks);
+        // }, 1000); // Wait 1 second (1000ms)
+        await new Promise(resolve => setTimeout(resolve, 1000)); // Wait 1 second
+        await mergeChunks(originalName, totalChunks);
+    }
+    res.status(200).json({ message: `Chunk ${chunkIndex} uploaded` });
+});
+
+// Merge chunks once all are received
+async function mergeChunks(originalName, totalChunks) {
+    const finalFilePath = path.join(uploadDir, originalName);
+    const writeStream = fs.createWriteStream(finalFilePath);
+
+    for (let i = 0; i < totalChunks; i++) {
+        const chunkPath = path.join(uploadDir, `${originalName}.part${i}`);
+        if (!fs.existsSync(chunkPath)) {
+            console.error(`Chunk ${i} missing, aborting merge.`);
+            return;
+        }
+        const chunkData = fs.readFileSync(chunkPath);
+        writeStream.write(chunkData);
+        console.log(`Merging ${i} chunpath = ${chunkPath}`);
+        fs.unlinkSync(chunkPath); // Delete chunk after merging
+    }
+
+    writeStream.end();
+    console.log(`File ${originalName} successfully assembled.`);
     try {
-        // Upload file to SMB share
-        await client.sendFile(tempPath, fileName);
-        console.log(`${fileName} uploaded to ${smb_address}`);
-        res.status(200).json({ message: "File uploaded successfully." });
+        // Upload merged file to SMB share
+        await client.sendFile(finalFilePath, originalName);
+        console.log(`${originalName} uploaded to ${smb_address}`);
     } catch (err) {
-        console.error(`${fileName} upload failed:`, err);
-        res.status(500).json({ error: "File upload failed." });
+        console.error(`${originalName} upload failed:`, err);
     } finally {
-        // Clean up temporary file
-        fs.unlinkSync(tempPath);
+        fs.unlinkSync(finalFilePath); // Clean up assembled file
     }
-});
+}
 
 app.listen(PORT, () => {
-    console.log(`Server is running on localhost:${PORT}`);
+    console.log(`Server is running on http://localhost:${PORT}`);
 });
