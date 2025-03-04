@@ -27,6 +27,16 @@ const client = new SambaClient({
     password: process.env.SMB_PASSWORD || "password"
 });
 
+function adler32(buffer) {
+    let MOD_ADLER = 65521;
+    let a = 1, b = 0;
+    for (let i = 0; i < buffer.length; i++) {
+        a = (a + buffer[i]) % MOD_ADLER;
+        b = (b + a) % MOD_ADLER;
+    }
+    return ((b << 16) | a) >>> 0; // Convert to unsigned 32-bit int
+}
+
 app.get("/healthcheck", async (req, res) => {
     try {
         await client.list("/healthcheck");
@@ -38,21 +48,30 @@ app.get("/healthcheck", async (req, res) => {
 });
 
 app.post("/upload-chunk", upload.single("chunk"), async (req, res) => {
-    const { originalName, chunkIndex, totalChunks } = req.body;
-    if (!req.file || !originalName || chunkIndex === undefined || !totalChunks) {
+    const { originalName, chunkIndex, totalChunks, checksum } = req.body;
+    if (!req.file || !originalName || chunkIndex === undefined || !totalChunks || !checksum) {
         return res.status(400).json({ message: "Invalid chunk data" });
     }
 
     const chunkPath = path.join(uploadDir, `${originalName}.part${chunkIndex}`);
 
-    // **Retry Handling: Avoid Overwriting Already Uploaded Chunks**
+    // Compute checksum to verify integrity
+    const buffer = fs.readFileSync(req.file.path);
+    const computedChecksum = adler32(buffer);
+
+    if (parseInt(checksum) !== computedChecksum) {
+        console.error(`Checksum mismatch for chunk ${chunkIndex} of ${originalName}`);
+        return res.status(400).json({ error: "Checksum mismatch, chunk corrupted" });
+    }
+
+    // Avoid overwriting already uploaded chunks
     if (fs.existsSync(chunkPath)) {
         console.log(`Chunk ${chunkIndex} of ${originalName} already exists, skipping.`);
         return res.status(200).json({ message: `Chunk ${chunkIndex} already received` });
     }
 
     fs.renameSync(req.file.path, chunkPath);
-    console.log(`Received chunk ${chunkIndex} of ${totalChunks} for ${originalName}`);
+    console.log(`Received chunk ${chunkIndex} of ${totalChunks} for ${originalName}.Checksum:${computedChecksum}`);
 
     // Check if all chunks are received before merging
     const receivedChunks = fs.readdirSync(uploadDir).filter(f => f.startsWith(originalName + ".part"));
@@ -61,7 +80,7 @@ app.post("/upload-chunk", upload.single("chunk"), async (req, res) => {
         await mergeChunks(originalName, totalChunks);
     }
 
-    res.status(200).json({ message: `Chunk ${chunkIndex} uploaded` });
+    res.status(200).json({ message: `Chunk ${chunkIndex} uploaded successfully` });
 });
 
 async function mergeChunks(originalName, totalChunks) {
@@ -80,6 +99,7 @@ async function mergeChunks(originalName, totalChunks) {
     }
     writeStream.end();
     console.log(`File ${originalName} successfully assembled.`);
+    
     try {
         await client.sendFile(finalFilePath, originalName);
         console.log(`${originalName} uploaded to ${smb_address}`);
