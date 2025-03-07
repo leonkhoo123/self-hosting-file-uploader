@@ -8,6 +8,10 @@ document.addEventListener("DOMContentLoaded", function () {
         .then(response => response.json())
         .then(result => {
             document.getElementById("healthcheck").textContent = result.message || "Healthcheck failed";
+            document.getElementById("sessionId").textContent = "Session ID: " + result.sessionId || "";
+            if (result.sessionId) {
+                localStorage.setItem("sessionId", result.sessionId);
+            }
         })
         .catch(error => {
             console.error("Error:", error);
@@ -44,6 +48,7 @@ document.addEventListener("DOMContentLoaded", function () {
             formData.append("chunkIndex", chunkIndex);
             formData.append("totalChunks", totalChunks);
             formData.append("checksum", checksum); // Send checksum
+            formData.append("req_sessionId", localStorage.getItem("sessionId")); // Attach session ID
 
             try {
                 const response = await fetch(apiURL, { method: "POST", body: formData });
@@ -83,6 +88,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 }
             }
             if(giveup){
+                // if one of the chunk retry and fail to max attemp, give up that file, proceed to next
                 break;
             }
             uploadedCount++;

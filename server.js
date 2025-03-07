@@ -37,24 +37,57 @@ function adler32(buffer) {
     return ((b << 16) | a) >>> 0; // Convert to unsigned 32-bit int
 }
 
+async function getUniqueFilename(originalFilename) {
+    const ext = path.extname(originalFilename);
+    const name = path.basename(originalFilename, ext);
+    let uniqueFilename = originalFilename;
+    let counter = 2;
+
+    try {
+        while (await client.fileExists(`/${smb_location}/${uniqueFilename}`)) {
+            uniqueFilename = `${name} (${counter})${ext}`;
+            console.log(`Generated name: ${uniqueFilename}`);
+            counter++;
+        }
+    } catch (err) {
+        console.error("Failed to list SMB directory:", err);
+    }
+
+    return uniqueFilename;
+}
+
+
+
 app.get("/healthcheck", async (req, res) => {
     try {
-        await client.list("/healthcheck");
-        res.status(200).json({ message: "SMB connection is healthy." });
+        await client.list("/healthcheck"); // Check SMB connection
+
+        const generateSessionId = () => Date.now().toString(36) + Math.random().toString(36).slice(-3);
+        const sessionId = generateSessionId(); // Call the function to generate ID
+        res.status(200).json({ 
+            message: "SMB connection is healthy.",
+            sessionId: sessionId 
+        });
     } catch (err) {
         console.error("SMB Health Check Failed:", err);
-        res.status(500).json({ message: "SMB connection failed." });
+
+        res.status(500).json({ 
+            message: "SMB connection failed.",
+            sessionId: null 
+        });
     }
 });
 
+
+
 app.post("/upload-chunk", upload.single("chunk"), async (req, res) => {
-    const { originalName, chunkIndex, totalChunks, checksum } = req.body;
-    if (!req.file || !originalName || chunkIndex === undefined || !totalChunks || !checksum) {
+    const { originalName, chunkIndex, totalChunks, checksum , req_sessionId} = req.body;
+    if (!req.file || !originalName || chunkIndex === undefined || !totalChunks || !checksum || !req_sessionId) {
         return res.status(400).json({ message: "Invalid chunk data" });
     }
-
+    console.log(`Receiving file from session: ${req_sessionId}`);
     const chunkPath = path.join(uploadDir, `${originalName}.part${chunkIndex}`);
-
+    
     // Compute checksum to verify integrity
     const buffer = fs.readFileSync(req.file.path);
     const computedChecksum = adler32(buffer);
@@ -101,8 +134,9 @@ async function mergeChunks(originalName, totalChunks) {
     console.log(`File ${originalName} successfully assembled.`);
     
     try {
-        await client.sendFile(finalFilePath, originalName);
-        console.log(`${originalName} uploaded to ${smb_address}`);
+        const uniqueFilename = await getUniqueFilename(originalName);
+        await client.sendFile(finalFilePath, `${smb_location}/${uniqueFilename}`);
+        console.log(`${originalName} uploaded as ${uniqueFilename} to ${smb_address}/${smb_location}`);
     } catch (err) {
         console.error(`${originalName} upload failed:`, err);
     } finally {
