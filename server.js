@@ -7,6 +7,7 @@ const fs = require("fs");
 const app = express();
 const PORT = 3000;
 
+const smb_location = 'share_folder'
 // Samba client setup
 const smb_host = process.env.SMB_HOST || "localhost"
 const smb_address = `//${smb_host}/share_space`
