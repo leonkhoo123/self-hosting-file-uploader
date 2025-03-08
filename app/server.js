@@ -3,11 +3,12 @@ const multer = require("multer");
 const path = require("path");
 const SambaClient = require("samba-client");
 const fs = require("fs");
-
+const db = require('../database'); // Import database.js
+const { consoleLogOut, consoleErrorOut } = require("../logger"); // import custom logger
 const app = express();
 const PORT = 3000;
 
-const smb_location = 'share_folder'
+// const smb_location = 'share_folder'
 // Samba client setup
 const smb_host = process.env.SMB_HOST || "localhost"
 const smb_address = `//${smb_host}/share_space`
@@ -28,11 +29,38 @@ if (!fs.existsSync(uploadDir)) {
 
 const upload = multer({ dest: uploadDir });
 
-app.post("/upload-chunk", upload.single("chunk"), async (req, res) => {
+const checkUploadAuth = (req, res, next) => {
+    const { id } = req.params;
+
+    db.get(`SELECT * FROM url_session WHERE id = ? and status == "A"`, [id], (err, row) => {
+        if (err || !row) {
+            consoleLogOut(`UploadAuth`, `Received forbidden access with URL: ${id}`);
+            return res.status(400).json({ error: "Invalid URL" });
+        }
+
+        // Check if the ID is expired
+        // const currentTime = Math.floor(Date.now() / 1000); // Get current time in seconds
+        // if (currentTime < row.startTime || currentTime > row.endTime) {
+        //     consoleLogOut(`UploadAuth`, `Expired or invalid access for URL: ${id}`);
+        //     return res.status(400).json({ error: "URL expired or not yet Activate" });
+        // }
+
+        // Store the upload path in request object for later use
+        req.uploadPath = row.path;
+        
+        consoleLogOut(`UploadAuth`, `Valid access granted for URL: ${id}`);
+        next(); // Proceed to the next middleware
+    });
+};
+
+
+app.post("/upload-chunk/:id",checkUploadAuth, upload.single("chunk"), async (req, res) => {
     const { originalName, chunkIndex, totalChunks, checksum , req_sessionId, status} = req.body;
     if (!req.file || !originalName || chunkIndex === undefined || !totalChunks || !checksum || !req_sessionId) {
         return res.status(400).json({ error: "Invalid chunk data" });
     }
+
+    const smb_location = req.uploadPath; // Get the path from middleware
 
     const sessionUploadDir = path.join(uploadDir, req_sessionId);
     if (!fs.existsSync(sessionUploadDir)) {
@@ -73,7 +101,8 @@ app.post("/upload-chunk", upload.single("chunk"), async (req, res) => {
     if (status == 'end' || status == 'single') {
         try{
             await new Promise(resolve => setTimeout(resolve, 1000)); // Delay before merging
-            await mergeChunks(originalName, totalChunks,sessionUploadDir,req_sessionId);
+            consoleLogOut(req_sessionId,`"${status}" flag received, proceed to merge chunks`);
+            await mergeChunks(originalName, totalChunks,sessionUploadDir,smb_location,req_sessionId);
         }catch (error){
             return res.status(400).json({ error: `${error.message}` });
         }
@@ -81,7 +110,7 @@ app.post("/upload-chunk", upload.single("chunk"), async (req, res) => {
     res.status(200).json({ message: `Chunk ${chunkIndex} uploaded successfully` });
 });
 
-app.get("/healthcheck", async (req, res) => {
+app.get("/healthcheck/:id",checkUploadAuth, async (req, res) => {
     try {
         await client.list("/healthcheck"); // Check SMB connection
 
@@ -100,15 +129,15 @@ app.get("/healthcheck", async (req, res) => {
         });
     } catch (err) {
         console.error("SMB Health Check Failed:", err);
-
-        res.status(500).json({ 
-            message: "SMB connection failed.",
-            sessionId: null 
-        });
+        return res.status(400).json({ error: "SMB Health Check Failed" });
+        // res.status(400).json({ 
+        //     message: "SMB connection failed.",
+        //     sessionId: null 
+        // });
     }
 });
 
-async function mergeChunks(originalName, totalChunks, sessionUploadDir,req_sessionId) {
+async function mergeChunks(originalName, totalChunks, sessionUploadDir,smb_location,req_sessionId) {
     const finalFilePath = path.join(sessionUploadDir, originalName);
     const writeStream = fs.createWriteStream(finalFilePath);
 
@@ -126,7 +155,7 @@ async function mergeChunks(originalName, totalChunks, sessionUploadDir,req_sessi
     consoleLogOut(req_sessionId,`File ${originalName} successfully assembled.`);
 
     try {
-        const uniqueFilename = await getUniqueFilename(originalName,req_sessionId);
+        const uniqueFilename = await getUniqueFilename(originalName,smb_location,req_sessionId);
         await client.sendFile(finalFilePath, `${smb_location}/${uniqueFilename}`);
         consoleLogOut(req_sessionId,`${originalName} uploaded as ${uniqueFilename} to ${smb_address}/${smb_location}`);
     } catch (error) {
@@ -147,7 +176,7 @@ function adler32(buffer) {
     return ((b << 16) | a) >>> 0; // Convert to unsigned 32-bit int
 }
 
-async function getUniqueFilename(originalFilename,req_sessionId) {
+async function getUniqueFilename(originalFilename,smb_location,req_sessionId) {
     const ext = path.extname(originalFilename);
     const name = path.basename(originalFilename, ext);
     let uniqueFilename = originalFilename;
@@ -165,26 +194,6 @@ async function getUniqueFilename(originalFilename,req_sessionId) {
 
     return uniqueFilename;
 }
-
-// log output pattern
-function consoleLogOut(sessionId, ...messages){
-    const now = new Date();
-    const gmt8Time = new Date(now.getTime() + 8 * 60 * 60 * 1000) // Convert to GMT+8
-        .toISOString()
-        .replace('T', ' ')
-        .replace('Z', ''); // Format to readable output
-    console.log(`[${gmt8Time}][${sessionId}][INFO]:`, ...messages);
-}
-
-function consoleErrorOut(sessionId, ...messages){
-    const now = new Date();
-    const gmt8Time = new Date(now.getTime() + 8 * 60 * 60 * 1000) // Convert to GMT+8
-        .toISOString()
-        .replace('T', ' ')
-        .replace('Z', ''); // Format to readable output
-    console.error(`[${gmt8Time}][${sessionId}][ERROR]:`, ...messages);
-}
-
 
 app.listen(PORT, () => {
     consoleLogOut(`APP`,`Server is running on http://localhost:${PORT}`);

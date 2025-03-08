@@ -2,20 +2,34 @@ document.addEventListener("DOMContentLoaded", function () {
     const isHttps = window.location.href.startsWith("https");
     const protocol = isHttps ? "https" : "http";
     const host = window.location.host;
-    const healthCheckURL = `${protocol}://${host}/healthcheck`;
+    const urlParams = new URLSearchParams(window.location.search);
+    const uploadId = urlParams.get("id"); // Get 'id' from URL (e.g., ?id=abc)
+    const healthCheckURL = `${protocol}://${host}/healthcheck/${uploadId}`;
+    const apiURL = `${protocol}://${host}/upload-chunk/${uploadId}`;
 
     fetch(healthCheckURL, { method: "GET" })
-        .then(response => response.json())
+        .then(async (response) => {
+            if (!response.ok) {
+                try {
+                    const errorData = await response.json(); // Try parsing JSON response
+                    errorMessage = errorData.error || "Unknown error";
+                } catch (e) {
+                    console.error("Error parsing JSON response:", e);
+                }
+                throw { status: response.status, message: errorMessage };
+            }
+            return response.json();
+        })
         .then(result => {
             document.getElementById("healthcheck").textContent = result.message || "Healthcheck failed";
-            document.getElementById("sessionId").textContent = "Session ID: " + result.sessionId || "";
+            document.getElementById("sessionId").textContent = "Session ID: " + result.sessionId || "temp";
             if (result.sessionId) {
                 localStorage.setItem("sessionId", result.sessionId);
             }
         })
         .catch(error => {
-            console.error("Error:", error);
-            document.getElementById("healthcheck").textContent = "Healthcheck failed";
+            console.error("Error:", error.message);
+            document.getElementById("healthcheck").textContent = `${error.message}`;
         });
 
     document.getElementById("uploadForm").addEventListener("submit", async function (event) {
@@ -26,7 +40,7 @@ document.addEventListener("DOMContentLoaded", function () {
             return;
         }
 
-        const apiURL = `${protocol}://${host}/upload-chunk`;
+        // const apiURL = `${protocol}://${host}/upload-chunk`;
         const CHUNK_SIZE = 7 * 1024 * 1024; // 7MB chunks
         let uploadedCount = 0, failedCount = 0;
 
