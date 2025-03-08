@@ -32,11 +32,29 @@ app.post("/upload-chunk", upload.single("chunk"), async (req, res) => {
     if (!req.file || !originalName || chunkIndex === undefined || !totalChunks || !checksum || !req_sessionId) {
         return res.status(400).json({ error: "Invalid chunk data" });
     }
-    if (status == 'start'){
-        //initialise the temp upload folder
 
+    const sessionUploadDir = path.join(uploadDir, req_sessionId);
+    if (!fs.existsSync(sessionUploadDir)) {
+        fs.mkdirSync(sessionUploadDir, { recursive: true });
     }
-    const chunkPath = path.join(uploadDir, `${originalName}.part${chunkIndex}`);
+
+    if (status === 'start') {
+        try {
+            fs.readdirSync(sessionUploadDir).forEach(file => {
+                if (file.startsWith(originalName)) {
+                    fs.unlinkSync(path.join(sessionUploadDir, file));
+                }
+            });
+            await new Promise(resolve => setTimeout(resolve, 1000)); // Delay before starting new upload
+            consoleLogOut(req_sessionId,`Cleared old chunks for ${originalName} in ${sessionUploadDir}`);
+            // return res.status(400).json({ error: "Finish clearing" });
+        } catch (err) {
+            consoleErrorOut(req_sessionId,`Error clearing old chunks: ${err.message}`);
+            return res.status(400).json({ error: "Error clearing leftover, please refresh page and upload again" });
+        }
+    }
+
+    const chunkPath = path.join(sessionUploadDir, `${originalName}.part${chunkIndex}`);
     
     // Compute checksum to verify integrity
     const buffer = fs.readFileSync(req.file.path);
@@ -54,7 +72,7 @@ app.post("/upload-chunk", upload.single("chunk"), async (req, res) => {
     if (status == 'end' || status == 'single') {
         try{
             await new Promise(resolve => setTimeout(resolve, 1000)); // Delay before merging
-            await mergeChunks(originalName, totalChunks,req_sessionId);
+            await mergeChunks(originalName, totalChunks,sessionUploadDir,req_sessionId);
         }catch (error){
             return res.status(400).json({ error: `${error.message}` });
         }
@@ -66,7 +84,14 @@ app.get("/healthcheck", async (req, res) => {
     try {
         await client.list("/healthcheck"); // Check SMB connection
 
-        const generateSessionId = () => Date.now().toString(36) + Math.random().toString(36).slice(-3);
+        const generateSessionId = () => {
+            const today = new Date().getDate().toString().padStart(2, '0'); // Get day (DD)
+            const timestamp = Date.now().toString(36);
+            const randomPart = Math.random().toString(36).slice(-3);
+        
+            return `${today}-${timestamp}-${randomPart}`;
+        };
+
         const sessionId = generateSessionId();
         res.status(200).json({ 
             message: "SMB connection is healthy.",
@@ -82,12 +107,12 @@ app.get("/healthcheck", async (req, res) => {
     }
 });
 
-async function mergeChunks(originalName, totalChunks,req_sessionId) {
-    const finalFilePath = path.join(uploadDir, originalName);
+async function mergeChunks(originalName, totalChunks, sessionUploadDir,req_sessionId) {
+    const finalFilePath = path.join(sessionUploadDir, originalName);
     const writeStream = fs.createWriteStream(finalFilePath);
 
-    for (let i = 1; i <= totalChunks; i++) {
-        const chunkPath = path.join(uploadDir, `${originalName}.part${i}`);
+    for (let i = 0; i < totalChunks; i++) {
+        const chunkPath = path.join(sessionUploadDir, `${originalName}.part${i}`);
         if (!fs.existsSync(chunkPath)) {
             consoleErrorOut(req_sessionId,`Chunk ${i} for ${originalName} missing, aborting merge.`);
             throw new Error(`Chunk ${i} for ${originalName} missing, aborting merge.`);
@@ -109,10 +134,6 @@ async function mergeChunks(originalName, totalChunks,req_sessionId) {
     } finally {
         fs.unlinkSync(finalFilePath); // Clean up assembled file
     }
-}
-
-function getTimestamp() {
-    return new Date().toLocaleString('en-GB', { timeZoneName: 'short' });
 }
 
 function adler32(buffer) {
@@ -137,7 +158,7 @@ async function getUniqueFilename(originalFilename,req_sessionId) {
             counter++;
         }
     } catch (error) {
-        consoleErrorOut(req_sessionId,`Failed to list SMB directory:`, err);
+        consoleErrorOut(req_sessionId,`Failed to list SMB directory:`, error);
         throw new Error(`Failed to list SMB directory to get unique filename.`);
     }
 

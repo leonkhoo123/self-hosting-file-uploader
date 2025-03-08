@@ -33,8 +33,8 @@ document.addEventListener("DOMContentLoaded", function () {
         let giveup = false;
         for (const file of fileInput.files) {
             const totalChunks = Math.ceil(file.size / CHUNK_SIZE);
-            for (let i = 1; i <= totalChunks; i++) {
-                let status = (totalChunks==1)? 'single' : (i == totalChunks) ? 'end' : (i == 1) ? 'start' : '';
+            for (let i = 0; i < totalChunks; i++) {
+                let status = (totalChunks==1)? 'single' : (i == totalChunks-1) ? 'end' : (i == 0) ? 'start' : '';
                 const start = i * CHUNK_SIZE;
                 const end = Math.min(start + CHUNK_SIZE, file.size);
                 const chunk = file.slice(start, end);
