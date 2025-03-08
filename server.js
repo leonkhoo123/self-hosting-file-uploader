@@ -7,6 +7,15 @@ const fs = require("fs");
 const app = express();
 const PORT = 3000;
 
+// Samba client setup
+const smb_host = process.env.SMB_HOST || "localhost"
+const smb_address = `//${smb_host}/share_space`
+const client = new SambaClient({
+    address: smb_address,
+    username: process.env.SMB_USERNAME || "username",
+    password: process.env.SMB_PASSWORD || "password"
+});
+
 // Middleware to parse JSON body
 app.use(express.json());
 app.use(express.static("public"));
@@ -17,39 +26,6 @@ if (!fs.existsSync(uploadDir)) {
 }
 
 const upload = multer({ dest: uploadDir });
-
-// Samba client setup
-const smb_host = process.env.SMB_HOST || "localhost"
-const smb_address = `//${smb_host}/share_space`
-const client = new SambaClient({
-    address: smb_address,
-    username: process.env.SMB_USERNAME || "username",
-    password: process.env.SMB_PASSWORD || "password"
-});
-
-app.listen(PORT, () => {
-    consoleLogOut(`APP`,`Server is running on http://localhost:${PORT}`);
-});
-
-app.get("/healthcheck", async (req, res) => {
-    try {
-        await client.list("/healthcheck"); // Check SMB connection
-
-        const generateSessionId = () => Date.now().toString(36) + Math.random().toString(36).slice(-3);
-        const sessionId = generateSessionId();
-        res.status(200).json({ 
-            message: "SMB connection is healthy.",
-            sessionId: sessionId 
-        });
-    } catch (err) {
-        console.error("SMB Health Check Failed:", err);
-
-        res.status(500).json({ 
-            message: "SMB connection failed.",
-            sessionId: null 
-        });
-    }
-});
 
 app.post("/upload-chunk", upload.single("chunk"), async (req, res) => {
     const { originalName, chunkIndex, totalChunks, checksum , req_sessionId, status} = req.body;
@@ -84,6 +60,26 @@ app.post("/upload-chunk", upload.single("chunk"), async (req, res) => {
         }
     }
     res.status(200).json({ message: `Chunk ${chunkIndex} uploaded successfully` });
+});
+
+app.get("/healthcheck", async (req, res) => {
+    try {
+        await client.list("/healthcheck"); // Check SMB connection
+
+        const generateSessionId = () => Date.now().toString(36) + Math.random().toString(36).slice(-3);
+        const sessionId = generateSessionId();
+        res.status(200).json({ 
+            message: "SMB connection is healthy.",
+            sessionId: sessionId 
+        });
+    } catch (err) {
+        console.error("SMB Health Check Failed:", err);
+
+        res.status(500).json({ 
+            message: "SMB connection failed.",
+            sessionId: null 
+        });
+    }
 });
 
 async function mergeChunks(originalName, totalChunks,req_sessionId) {
@@ -166,3 +162,8 @@ function consoleErrorOut(sessionId, ...messages){
         .replace('Z', ''); // Format to readable output
     console.error(`[${gmt8Time}][${sessionId}][ERROR]:`, ...messages);
 }
+
+
+app.listen(PORT, () => {
+    consoleLogOut(`APP`,`Server is running on http://localhost:${PORT}`);
+});
