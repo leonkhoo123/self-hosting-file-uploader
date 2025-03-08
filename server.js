@@ -3,19 +3,19 @@ const multer = require("multer");
 const path = require("path");
 const SambaClient = require("samba-client");
 const fs = require("fs");
-const db = require('../database'); // Import database.js
-const { consoleLogOut, consoleErrorOut } = require("../logger"); // import custom logger
+const db = require('./database'); // Import database.js
+const { consoleLogOut, consoleErrorOut } = require("./logger"); // import custom logger
 const app = express();
 const PORT = 3000;
 
 // const smb_location = 'share_folder'
 // Samba client setup
-const smb_host = process.env.SMB_HOST || "localhost"
+const smb_host = process.env.SMB_HOST || "192.168.1.6"
 const smb_address = `//${smb_host}/share_space`
 const client = new SambaClient({
     address: smb_address,
-    username: process.env.SMB_USERNAME || "username",
-    password: process.env.SMB_PASSWORD || "password"
+    username: process.env.SMB_USERNAME || "publicuser",
+    password: process.env.SMB_PASSWORD || "Abc88888888"
 });
 
 // Middleware to parse JSON body
