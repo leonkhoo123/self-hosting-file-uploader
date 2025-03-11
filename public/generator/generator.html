@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Secure URL Generator</title>
+    <script defer src="generatorUI.js"></script>
+</head>
+<body>
+    <h1>Secure Upload URL Generator</h1>
+
+    <label>Start Date: <input type="datetime-local" id="start-date"></label><br>
+    <label>End Date: <input type="datetime-local" id="end-date"></label><br>
+
+    <label>NAS Path: 
+        <select id="nas-path"></select>
+        <button id="add-path">Add Path</button>
+    </label><br>
+
+    <button id="generate">Generate Secure URL</button>
+
+    <h2>Generated URLs</h2>
+    <ul id="url-list"></ul>
+</body>
+</html>

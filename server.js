@@ -22,7 +22,7 @@ const client = new SambaClient({
 app.use(express.json());
 app.use(express.static("public"));
 
-const uploadDir = "uploads/";
+const uploadDir = "temp_uploads/";
 if (!fs.existsSync(uploadDir)) {
     fs.mkdirSync(uploadDir, { recursive: true });
 }
@@ -62,13 +62,14 @@ app.post("/upload-chunk/:id",checkUploadAuth, upload.single("chunk"), async (req
 
     const smb_location = req.uploadPath; // Get the path from middleware
 
-    const sessionUploadDir = path.join(uploadDir, req_sessionId);
+    const sessionUploadDir = path.join(uploadDir, req_sessionId); // Form new dir for each visit session
     if (!fs.existsSync(sessionUploadDir)) {
-        fs.mkdirSync(sessionUploadDir, { recursive: true });
+        fs.mkdirSync(sessionUploadDir, { recursive: true }); // Create folder for the session
     }
 
-    if (status === 'start') {
+    if (status === 'start') { // first chunk of the file
         try {
+            //clear any left over chunk that same name with current upload
             fs.readdirSync(sessionUploadDir).forEach(file => {
                 if (file.startsWith(originalName)) {
                     fs.unlinkSync(path.join(sessionUploadDir, file));
@@ -76,7 +77,6 @@ app.post("/upload-chunk/:id",checkUploadAuth, upload.single("chunk"), async (req
             });
             await new Promise(resolve => setTimeout(resolve, 1000)); // Delay before starting new upload
             consoleLogOut(req_sessionId,`Cleared old chunks for ${originalName} in ${sessionUploadDir}`);
-            // return res.status(400).json({ error: "Finish clearing" });
         } catch (err) {
             consoleErrorOut(req_sessionId,`Error clearing old chunks: ${err.message}`);
             return res.status(400).json({ error: "Error clearing leftover, please refresh page and upload again" });
@@ -98,11 +98,11 @@ app.post("/upload-chunk/:id",checkUploadAuth, upload.single("chunk"), async (req
     consoleLogOut(req_sessionId,`Received chunk ${chunkIndex}/${totalChunks} for ${originalName}.Checksum:${computedChecksum}`);
 
     //receiving end status from frontend, means last chunk uploaded
-    if (status == 'end' || status == 'single') {
+    if (status == 'end' || status == 'single') { // proceed to merge
         try{
             await new Promise(resolve => setTimeout(resolve, 1000)); // Delay before merging
             consoleLogOut(req_sessionId,`"${status}" flag received, proceed to merge chunks`);
-            await mergeChunks(originalName, totalChunks,sessionUploadDir,smb_location,req_sessionId);
+            await mergeChunks(originalName, totalChunks,sessionUploadDir,smb_location,req_sessionId); // proceed to merge
         }catch (error){
             return res.status(400).json({ error: `${error.message}` });
         }
