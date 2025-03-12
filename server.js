@@ -35,7 +35,11 @@ const checkUploadAuth = (req, res, next) => {
     db.get(`SELECT * FROM url_session WHERE id = ? and status == "A"`, [id], (err, row) => {
         if (err || !row) {
             consoleLogOut(`UploadAuth`, `Received forbidden access with URL: ${id}`);
-            return res.status(400).json({ error: "Invalid URL" });
+            // return res.status(400).json({ error: "Invalid URL" });
+            return res.status(400).json({ 
+                status: 400,
+                message: "Invalid URL",
+            });
         }
 
         // Check if the ID is expired
@@ -124,7 +128,8 @@ app.get("/healthcheck/:id",checkUploadAuth, async (req, res) => {
 
         const sessionId = generateSessionId();
         res.status(200).json({ 
-            message: "SMB connection is healthy.",
+            status: 200,
+            message: "SMB connection is healthy",
             sessionId: sessionId 
         });
     } catch (err) {
