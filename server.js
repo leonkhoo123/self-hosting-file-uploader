@@ -1,4 +1,5 @@
 require("dotenv").config();
+const cron = require("node-cron");
 const express = require("express");
 const multer = require("multer");
 const path = require("path");
@@ -8,6 +9,8 @@ const db = require('./database'); // Import database.js
 const { consoleLogOut, consoleErrorOut } = require("./logger"); // import custom logger
 const app = express();
 const PORT = 3000;
+const servername = "Leon NAS"
+let isClearing = false;
 
 // const smb_location = 'share_folder'
 // Samba client setup
@@ -96,19 +99,29 @@ app.post("/upload-chunk/:id",checkUploadAuth, upload.single("chunk"), async (req
 
     if (parseInt(checksum) !== computedChecksum) {
         consoleErrorOut(req_sessionId,`Checksum mismatch for chunk ${chunkIndex} of ${originalName}`);
+        fs.unlinkSync(req.file.path); // Delete the corrupt chunk
+        await new Promise(resolve => setTimeout(resolve, 1000)); // Delay before returning error
         return res.status(409).json({ error: "Checksum mismatch, chunk corrupted" });
     }
 
     fs.renameSync(req.file.path, chunkPath);
-    consoleLogOut(req_sessionId,`Received chunk ${chunkIndex}/${totalChunks} for ${originalName}.Checksum:${computedChecksum}`);
+    consoleLogOut(req_sessionId,`Received chunk ${parseInt(chunkIndex)+1}/${totalChunks} for ${originalName}.Checksum:${computedChecksum}`);
 
     //receiving end status from frontend, means last chunk uploaded
     if (status == 'end' || status == 'single') { // proceed to merge
+        await new Promise(resolve => setTimeout(resolve, 1000)); // Delay before merging
+        const receivedChunks = fs.readdirSync(sessionUploadDir).filter(file => file.startsWith(originalName)).length;
+        consoleLogOut(req_sessionId,`"${status}" flag received,Total:${parseInt(totalChunks)}, Received: ${receivedChunks}`);
+        if (receivedChunks !== parseInt(totalChunks)) {
+            consoleErrorOut(req_sessionId, `Mismatch: Expected ${totalChunks} chunks, but received ${receivedChunks}`);
+            return res.status(400).json({ error: "Incomplete upload, please retry" });
+        }
+
         try{
-            await new Promise(resolve => setTimeout(resolve, 1000)); // Delay before merging
-            consoleLogOut(req_sessionId,`"${status}" flag received, proceed to merge chunks`);
+            consoleLogOut(req_sessionId,`Start merging ${originalName}.`);
             await mergeChunks(originalName, totalChunks,sessionUploadDir,smb_location,req_sessionId); // proceed to merge
         }catch (error){
+            consoleLogOut(`Sending back 400, uploaded failed, SMB issue`)
             return res.status(400).json({ error: `${error.message}` });
         }
     }
@@ -131,7 +144,9 @@ app.get("/healthcheck/:id",checkUploadAuth, async (req, res) => {
         res.status(200).json({ 
             status: 200,
             message: "SMB connection is healthy",
-            sessionId: sessionId 
+            sessionId: sessionId,
+            path:req.uploadPath,
+            servername:servername
         });
     } catch (err) {
         console.error("SMB Health Check Failed:", err);
@@ -201,6 +216,55 @@ async function getUniqueFilename(originalFilename,smb_location,req_sessionId) {
     return uniqueFilename;
 }
 
+// Function to clear temp_uploads
+function clearTempUploads() {
+    if (isClearing) return; // Prevent duplicate cleanup runs
+
+    consoleLogOut(`APP`, `Starting nightly cleanup...`);
+    isClearing = true;
+
+    fs.readdir(uploadDir, (err, files) => {
+        if (err) {
+            consoleErrorOut(`APP`, `Error reading temp_uploads directory: ${err}`);
+            isClearing = false;
+            return;
+        }
+        files.forEach((file) => {
+            const filePath = path.join(uploadDir, file);
+            fs.stat(filePath, (err, stats) => {
+                if (err) {
+                    consoleErrorOut(`APP`, `Failed to read ${file}: ${err}`);
+                    return;
+                }
+
+                if (stats.isDirectory()) {
+                    // Remove directories recursively
+                    fs.rm(filePath, { recursive: true, force: true }, (err) => {
+                        if (err) {
+                            consoleErrorOut(`APP`, `Failed to delete directory ${file}: ${err}`);
+                        }
+                    });
+                } else {
+                    // Remove files
+                    fs.unlink(filePath, (err) => {
+                        if (err) {
+                            consoleErrorOut(`APP`, `Failed to delete ${file}: ${err}`);
+                        }
+                    });
+                }
+            });
+        });
+        consoleLogOut(`APP`, `Nightly cleanup completed.`);
+        isClearing = false;
+    });
+}
+
+// Schedule cleanup every night at 5 AM
+cron.schedule("0 5 * * *", clearTempUploads, {
+    timezone: "Asia/Singapore",
+});
+
 app.listen(PORT, () => {
+    clearTempUploads();
     consoleLogOut(`APP`,`Server is running on http://localhost:${PORT}`);
 });
