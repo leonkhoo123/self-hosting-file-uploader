@@ -1,3 +1,4 @@
+require("dotenv").config();
 const express = require("express");
 const multer = require("multer");
 const path = require("path");
@@ -14,8 +15,8 @@ const smb_host = process.env.SMB_HOST || "192.168.1.6"
 const smb_address = `//${smb_host}/share_space`
 const client = new SambaClient({
     address: smb_address,
-    username: process.env.SMB_USERNAME || "publicuser",
-    password: process.env.SMB_PASSWORD || "Abc88888888"
+    username: process.env.SMB_USERNAME || "username",
+    password: process.env.SMB_PASSWORD || "password"
 });
 
 // Middleware to parse JSON body

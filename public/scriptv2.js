@@ -43,7 +43,7 @@ document.addEventListener("DOMContentLoaded", function () {
             </div>
             <span class="${result.status === 200 ? '' : 'hidden'} text-xs text-gray-500 pt-1 pl-5">Session ID: <span id="sessionId">${result.sessionId || " "}</span></span>
         </div>
-        <button id="uploadBtn" class="bg-green-500 text-white px-2 py-2 rounded sm:px-3 sm:py-2">Start Upload</button>
+        <button id="uploadBtn" class="${result.status === 200 ? '' : 'hidden'} bg-green-500 text-white px-2 py-2 rounded sm:px-3 sm:py-2">Start Upload</button>
         `;
 
         if (result.sessionId) {
