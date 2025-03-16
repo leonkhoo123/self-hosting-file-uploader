@@ -5,21 +5,73 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Secure URL Generator</title>
     <script defer src="generatorUI.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- <link href="../style.css" rel="stylesheet"> -->
 </head>
-<body>
-    <h1>Secure Upload URL Generator</h1>
+<body class="bg-gray-100 flex flex-col items-center py-10">
+    <div class="w-11/12 sm:max-w-2xl bg-white shadow-lg rounded-lg p-3 sm:p-6">
+        <!-- Upload URL Generator Title -->
+        <div class="mb-6 text-center">
+            <h1 class="text-4xl font-bold text-gray-800">Upload URL Generator</h1>
+            <p class="text-gray-500 mt-2">Easily generate secure upload URLs for your NAS</p>
+        </div>
 
-    <label>Start Date: <input type="datetime-local" id="start-date"></label><br>
-    <label>End Date: <input type="datetime-local" id="end-date"></label><br>
+        <!-- Input Section -->
+        <div id="inputSection" class="space-y-5">
+            <!-- Date Inputs -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <label class="flex flex-col text-gray-700">
+                    <span class="font-medium">Start Date</span>
+                    <input type="datetime-local" id="start-date" class="border rounded-lg p-2 mt-1">
+                </label>
+                <label class="flex flex-col text-gray-700">
+                    <span class="font-medium">End Date</span>
+                    <input type="datetime-local" id="end-date" class="border rounded-lg p-2 mt-1">
+                </label>
+            </div>
 
-    <label>NAS Path: 
-        <select id="nas-path"></select>
-        <button id="add-path">Add Path</button>
-    </label><br>
+            <!-- NAS Path Selection -->
+            <div class="flex flex-col sm:flex-row sm:items-end gap-4">
+                <label class="flex flex-col text-gray-700 flex-grow">
+                    <span class="font-medium">NAS Path</span>
+                    <select id="nas-path" class="border rounded-lg p-2 mt-1"></select>
+                </label>
+                <button id="add-path" class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition">
+                    Add Path
+                </button>
+            </div>
 
-    <button id="generate">Generate Secure URL</button>
+            <!-- Generate Button -->
+            <div class="flex justify-center">
+                <button id="generate" class="bg-green-500 text-white px-6 py-3 rounded-lg text-lg font-semibold shadow-md hover:bg-green-600 transition">
+                    Generate Secure URL
+                </button>
+            </div>
+        </div>
 
-    <h2>Generated URLs</h2>
-    <ul id="url-list"></ul>
+        <!-- Generated URLs Section -->
+        <div class="w-full bg-gray-50 shadow-md rounded-lg p-2 sm:p-4 mt-6">
+            <div class="flex justify-between items-center mb-3">
+                <h2 class="text-xl font-semibold text-gray-800">Generated URLs</h2>
+            </div>
+            <ul id="url-list" class="text-sm text-gray-700 space-y-2">
+                <!-- File items will be inserted here -->
+            </ul>
+        </div>
+    </div>
+
+    <!-- MODAL for Adding Path -->
+    <div id="path-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center">
+        <div class="bg-white p-6 rounded-lg shadow-lg w-80">
+            <h2 class="text-xl font-semibold mb-3">Add New NAS Path</h2>
+            <input type="text" id="new-path" class="border p-2 w-full rounded-lg" placeholder="Enter new path">
+            <div class="flex justify-end mt-4 space-x-2">
+                <button id="cancel-path" class="px-4 py-2 bg-gray-400 text-white rounded-lg hover:bg-gray-500">Cancel</button>
+                <button id="confirm-path" class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600">OK</button>
+            </div>
+        </div>
+    </div> 
+    <div id="toast-message" class="hidden fixed bottom-20 left-1/2 transform -translate-x-1/2 bg-gray-500 text-white px-4 py-2 rounded-lg shadow-md">
+        Copied to clipboard!
+    </div>
 </body>
-</html>

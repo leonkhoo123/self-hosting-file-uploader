@@ -3,9 +3,14 @@ const app = express();
 const port = 3001;
 const db = require('./database'); // Import database.js
 const { consoleLogOut, consoleErrorOut } = require("./logger"); // import custom logger
+const host = `linkliang`
 
 app.use(express.json());
 app.use(express.static("public/generator"));
+app.use("/style.css", (req, res) => {
+    res.sendFile(__dirname + "/public/style.css");
+});
+
 
 function generateBase36Id(length = 32) {
     return [...Array(length)]
@@ -20,24 +25,25 @@ app.post('/generate', (req, res) => {
         return res.status(400).json({ error: 'Missing required fields' });
     }
     
-    const id = generateBase36Id();
+    const session_id = generateBase36Id();
     const createdTime = Date.now();
     const status = 'A';
     
-    db.run(`INSERT INTO url_session (id, startTime, endTime, path, status, createdTime) VALUES (?, ?, ?, ?, ?, ?)`,
-        [id, startTime, endTime, path, status, createdTime],
+    db.run(
+        `INSERT INTO url_session (session_id, startTime, endTime, path, status, createdTime) VALUES (?, ?, ?, ?, ?, ?)`,
+        [session_id, startTime, endTime, path, status, createdTime],
         function (err) {
             if (err) {
                 return res.status(500).json({ error: err.message });
             }
-            res.json({ url: `https://hostname.com/?id=${id}` });
+            res.json({ url: `https://${host}.com/?id=${this.session_id}` });
         }
-    );
+    );    
 });
 
 // 2. Fetch All URLs
 app.get('/sessions', (req, res) => {
-    db.all(`SELECT * FROM url_session`, [], (err, rows) => {
+    db.all(`SELECT * FROM url_session order by id desc limit 10`, [], (err, rows) => {
         if (err) {
             return res.status(500).json({ error: err.message });
         }
@@ -47,12 +53,12 @@ app.get('/sessions', (req, res) => {
 
 // 3. Disable a URL
 app.post('/disable', (req, res) => {
-    const { id } = req.body;
-    if (!id) {
-        return res.status(400).json({ error: 'Missing ID' });
+    const { session_id } = req.body;
+    if (!session_id) {
+        return res.status(400).json({ error: 'Missing session_id' });
     }
     
-    db.run(`UPDATE url_session SET status = 'D' WHERE id = ?`, [id], function (err) {
+    db.run(`UPDATE url_session SET status = 'D' WHERE session_id = ?`, [session_id], function (err) {
         if (err) {
             return res.status(500).json({ error: err.message });
         }

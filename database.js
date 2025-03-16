@@ -19,7 +19,8 @@ const db = new sqlite3.Database(dbPath, (err) => {
 db.serialize(() => {
     db.run(`
         CREATE TABLE IF NOT EXISTS url_session (
-            id TEXT PRIMARY KEY,
+            id INTEGER PRIMARY KEY,
+            session_id TEXT NOT NULL UNIQUE,
             startTime INTEGER,
             endTime INTEGER,
             path TEXT,
@@ -28,5 +29,6 @@ db.serialize(() => {
         )
     `);
 });
+//CREATE UNIQUE INDEX idx_session_id ON url_session (session_id);
 
 module.exports = db;

@@ -24,7 +24,10 @@ const client = new SambaClient({
 
 // Middleware to parse JSON body
 app.use(express.json());
-app.use(express.static("public"));
+app.use(express.static("public/uploader"));
+app.use("/style.css", (req, res) => {
+    res.sendFile(__dirname + "/public/style.css");
+});
 
 const uploadDir = "temp_uploads/";
 if (!fs.existsSync(uploadDir)) {
