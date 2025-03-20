@@ -16,6 +16,7 @@ document.addEventListener("DOMContentLoaded", function () {
     const protocol = isHttps ? "https" : "http";
     const host = window.location.host;
     const urlPath = `${protocol}://${host}/`;
+    const timezone = 8 * 60 //GMT+8
 
     let tempPath = ""; // Temporary path storage
     let tempOption = null; // Reference to the temporary option
@@ -23,7 +24,7 @@ document.addEventListener("DOMContentLoaded", function () {
     // Get the current date and time
     const now = new Date();
     // Convert to GMT+8
-    now.setMinutes(now.getMinutes() + 480); // 480 minutes = 8 hours
+    now.setMinutes(now.getMinutes() + timezone); // 480 minutes = 8 hours
     // Format YYYY-MM-DDTHH:MM
     const formattedDateTime = now.toISOString().slice(0, 16);
     startDateInput.value = formattedDateTime;
@@ -81,11 +82,22 @@ document.addEventListener("DOMContentLoaded", function () {
             newPathInput.value = ""; // Clear input
         }
     });
-    
+
+    endDateInput.addEventListener("change", () => {
+        const startTime = new Date(startDateInput.value).getTime(); // Convert back to UTC
+        const endTime = new Date(endDateInput.value).getTime(); // Convert back to UTC
+        if(startTime>endTime){
+            toast_message("Invalid End Time");
+            endDateInput.value = '';
+        }
+    });
+
     // Generate Secure URL
     generateButton.addEventListener("click", function () {
-        const startTime = new Date(startDateInput.value).getTime();
-        const endTime = new Date(endDateInput.value).getTime();
+        // const startTime = new Date(startDateInput.value).getTime();
+        // const endTime = new Date(endDateInput.value).getTime();
+        const startTime = new Date(startDateInput.value).getTime(); // Convert back to UTC
+        const endTime = new Date(endDateInput.value).getTime(); // Convert back to UTC
         const path = pathSelect.value;
         
         if (!startTime || !endTime || !path) {
@@ -115,13 +127,19 @@ document.addEventListener("DOMContentLoaded", function () {
                 urls.forEach(url => {
                     const listItem = document.createElement("li");
                     listItem.classList.add("flex", "justify-between", "items-center", "p-2", "rounded-md","border-2", "cursor-pointer");
+                    let now = Date.now();
                     let status = "Active";
                     let statusclass = "text-green-500";
                     if (url.status=="D"){
                         status = "Disabled";
                         statusclass = "text-red-500"
                         listItem.classList.add("border-red-500");
-                    }else{
+                    }else if (url.endTime<now){
+                        status = "Expired";
+                        statusclass = "text-yellow-500"
+                        listItem.classList.add("border-yellow-500");
+                    }
+                    else{
                         listItem.classList.add("border-green-500");
                         listItem.classList.add("hover:bg-gray-100");
                     }
@@ -133,8 +151,8 @@ document.addEventListener("DOMContentLoaded", function () {
                     contentDiv.innerHTML = `
                         <strong class="overflow-hidden text-ellipsis whitespace-nowrap">${url.session_id}</strong> 
                         <div class="flex flex-col w-full justify-between item-center">
-                            <div>Start Time : ${new Date(url.startTime).toLocaleString("en-GB")}</div>
-                            <div>End Time : ${new Date(url.endTime).toLocaleString("en-GB")}</div>
+                        <div>Start Time : ${new Date(url.startTime).toLocaleString("en-GB")}</div>
+                        <div>End Time : ${new Date(url.endTime).toLocaleString("en-GB")}</div>
                         </div>     
                         <div class="flex flex-col sm:flex-row w-full justify-start item-center">
                             <div class = "w-4/5"> path : ${url.path} </div>
@@ -146,7 +164,7 @@ document.addEventListener("DOMContentLoaded", function () {
                     urlList.appendChild(listItem);
 
                     // Disable button (aligned right)
-                    if (url.status!="D"){
+                    if (url.status!="D" && url.endTime>now){
                         const disableBtn = document.createElement("button");
                         disableBtn.textContent = "Disable";
                         disableBtn.classList.add("hidden","sm:inline","bg-red-500", "text-white", "px-3", "py-1", "rounded", "hover:bg-red-700");
@@ -177,18 +195,8 @@ document.addEventListener("DOMContentLoaded", function () {
     window.copyToClipboard = function (id) {
         const url = `https://hostname.com/?id=${id}`;
         navigator.clipboard.writeText(url);
-    
-        // Show toast message
-        const toast = document.getElementById("toast-message");
-        // toast.textContent = `Copied: ${url}`;
-        toast.classList.remove("hidden", "opacity-0");
-        toast.classList.add("opacity-100");
-    
-        // Hide after 3 seconds
-        setTimeout(() => {
-            toast.classList.add("opacity-0");
-            setTimeout(() => toast.classList.add("hidden"), 300);
-        }, 2000);
+        toast_message("Copied to clipboard!");
+
     };
     
     // Disable a URL
@@ -201,4 +209,18 @@ document.addEventListener("DOMContentLoaded", function () {
         .then(response => response.json())
         .then(() => loadUrls());
     };
+
+    function toast_message(input){
+        // Show toast message
+        const toast = document.getElementById("toast-message");
+        toast.textContent = input;
+        toast.classList.remove("hidden", "opacity-0");
+        toast.classList.add("opacity-100");
+
+        // Hide after 3 seconds
+        setTimeout(() => {
+            toast.classList.add("opacity-0");
+            setTimeout(() => toast.classList.add("hidden"), 300);
+        }, 3000);
+    }
 });

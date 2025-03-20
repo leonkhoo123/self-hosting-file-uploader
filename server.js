@@ -36,33 +36,85 @@ if (!fs.existsSync(uploadDir)) {
 
 const upload = multer({ dest: uploadDir });
 
-const checkUploadAuth = (req, res, next) => {
-    const { id } = req.params;
+let uploadSessions = {}; // In-memory cache
 
-    db.get(`SELECT * FROM url_session WHERE id = ? and status == "A"`, [id], (err, row) => {
-        if (err || !row) {
-            consoleLogOut(`UploadAuth`, `Received forbidden access with URL: ${id}`);
-            // return res.status(400).json({ error: "Invalid URL" });
-            return res.status(400).json({ 
-                status: 400,
-                message: "Invalid URL",
-            });
+// Load active sessions into memory
+const loadUploadSessions = () => {
+    db.all(`SELECT session_id, startTime, endTime, path FROM url_session WHERE status = "A"`, [], (err, rows) => {
+        if (err) {
+            consoleErrorOut(`ReloadCache`, `Error loading sessions into cache: ${err.message}`);
+            return;
         }
-
-        // Check if the ID is expired
-        // const currentTime = Math.floor(Date.now() / 1000); // Get current time in seconds
-        // if (currentTime < row.startTime || currentTime > row.endTime) {
-        //     consoleLogOut(`UploadAuth`, `Expired or invalid access for URL: ${id}`);
-        //     return res.status(400).json({ error: "URL expired or not yet Activate" });
-        // }
-
-        // Store the upload path in request object for later use
-        req.uploadPath = row.path;
-        
-        consoleLogOut(`UploadAuth`, `Valid access granted for URL: ${id}`);
-        next(); // Proceed to the next middleware
+        uploadSessions = {}; // Reset cache
+        rows.forEach(row => {
+            uploadSessions[row.session_id] = row;
+        });
+        consoleLogOut(`ReloadCache`, `Cache reloaded`);
     });
 };
+
+// Middleware: Check Upload Auth
+const checkUploadAuth = (req, res, next) => {
+    const { id } = req.params;
+    const session = uploadSessions[id];
+
+    if (!session) {
+        consoleLogOut(`UploadAuth`, `Received forbidden access with URL: ${id}`);
+        return res.status(400).json({
+            status: 400,
+            message: "Invalid URL",
+        });
+    }
+
+    // Check if the session is expired
+    const currentTime = Date.now();
+
+    if (currentTime < session.startTime || currentTime > session.endTime) {
+        consoleLogOut(`UploadAuth`, `Expired or invalid access for URL: ${id}`);
+        return res.status(400).json({ error: "URL expired or not yet activated" });
+    }
+
+    // Store the upload path in request object for later use
+    req.uploadPath = session.path;
+    // consoleLogOut(`UploadAuth`, `Valid access granted for URL: ${id}`);
+    next();
+};
+
+// API to Reload Cache
+app.post('/reload-cache', (req, res) => {
+    loadUploadSessions();
+    res.status(200).json({ message: "Upload session cache reloaded successfully" });
+});
+
+// const checkUploadAuth = (req, res, next) => {
+//     const { id } = req.params;
+
+//     db.get(`SELECT * FROM url_session WHERE session_id = ? and status == "A"`, [id], (err, row) => {
+//         if (err || !row) {
+//             consoleLogOut(`UploadAuth`, `Received forbidden access with URL: ${id}`);
+//             // return res.status(400).json({ error: "Invalid URL" });
+//             return res.status(400).json({ 
+//                 status: 400,
+//                 message: "Invalid URL",
+//             });
+//         }
+
+//         // Check if the ID is expired
+//         // const currentTime = Math.floor(Date.now() / 1000); // Get current time in seconds
+//         const currentTime = Date.now(); // Get current time in seconds
+//         consoleLogOut(`UploadAuth`,`${currentTime}`);
+//         if (currentTime < row.startTime || currentTime > row.endTime) {
+//             consoleLogOut(`UploadAuth`, `Expired or invalid access for URL: ${id}`);
+//             return res.status(400).json({ error: "URL expired or not yet Activate" });
+//         }
+
+//         // Store the upload path in request object for later use
+//         req.uploadPath = row.path;
+        
+//         consoleLogOut(`UploadAuth`, `Valid access granted for URL: ${id}`);
+//         next(); // Proceed to the next middleware
+//     });
+// };
 
 
 app.post("/upload-chunk/:id",checkUploadAuth, upload.single("chunk"), async (req, res) => {
@@ -133,6 +185,7 @@ app.post("/upload-chunk/:id",checkUploadAuth, upload.single("chunk"), async (req
 
 app.get("/healthcheck/:id",checkUploadAuth, async (req, res) => {
     try {
+        const { id } = req.params; // Extract id from request parameters
         await client.list("/healthcheck"); // Check SMB connection
 
         const generateSessionId = () => {
@@ -144,6 +197,7 @@ app.get("/healthcheck/:id",checkUploadAuth, async (req, res) => {
         };
 
         const sessionId = generateSessionId();
+        consoleLogOut(sessionId, `Valid access granted for URL: ${id}`);
         res.status(200).json({ 
             status: 200,
             message: "SMB connection is healthy",
@@ -219,6 +273,10 @@ async function getUniqueFilename(originalFilename,smb_location,req_sessionId) {
     return uniqueFilename;
 }
 
+
+
+
+
 // Function to clear temp_uploads
 function clearTempUploads() {
     if (isClearing) return; // Prevent duplicate cleanup runs
@@ -269,5 +327,6 @@ cron.schedule("0 5 * * *", clearTempUploads, {
 
 app.listen(PORT, () => {
     clearTempUploads();
+    loadUploadSessions();
     consoleLogOut(`APP`,`Server is running on http://localhost:${PORT}`);
 });

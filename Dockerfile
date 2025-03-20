@@ -1,10 +1,10 @@
 # Use the smallest official Node.js Alpine image as base
 FROM node:18-alpine
 
-# Install only the necessary package (smbclient) without extra dependencies
+# Install necessary packages (smbclient) without extra dependencies
 RUN apk add --no-cache samba-client && rm -rf /var/cache/apk/*
 
-# Set working directory in the container
+# Set working directory to the project root
 WORKDIR /app
 
 # Copy only package.json for better caching
@@ -13,14 +13,15 @@ COPY package*.json ./
 # Install production dependencies only
 RUN npm ci --only=production --no-audit --no-fund
 
-# Copy the rest of the application code
+# Copy all files to the container
 COPY . .
 
-# Remove unnecessary files (node_modules cache, etc.) to save space
-RUN npm prune --production
+# Install PM2 globally
+RUN npm install -g pm2
 
-# Expose port 3000
+# Expose ports
 EXPOSE 3000
+EXPOSE 3001
 
-# Start the server
-CMD ["node", "server.js"]
+# Start both server.js and generator.js using PM2
+CMD ["pm2-runtime", "start", "ecosystem.config.js"]

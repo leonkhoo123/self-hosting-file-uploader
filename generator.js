@@ -4,6 +4,7 @@ const port = 3001;
 const db = require('./database'); // Import database.js
 const { consoleLogOut, consoleErrorOut } = require("./logger"); // import custom logger
 const host = `linkliang`
+const axios = require('axios');
 
 app.use(express.json());
 app.use(express.static("public/generator"));
@@ -19,16 +20,16 @@ function generateBase36Id(length = 32) {
 }
 
 // 1. Generate Secure URL
-app.post('/generate', (req, res) => {
+app.post('/generate', async (req, res) => {
     const { startTime, endTime, path } = req.body;
     if (!startTime || !endTime || !path) {
         return res.status(400).json({ error: 'Missing required fields' });
     }
-    
+
     const session_id = generateBase36Id();
     const createdTime = Date.now();
     const status = 'A';
-    
+
     db.run(
         `INSERT INTO url_session (session_id, startTime, endTime, path, status, createdTime) VALUES (?, ?, ?, ?, ?, ?)`,
         [session_id, startTime, endTime, path, status, createdTime],
@@ -36,10 +37,17 @@ app.post('/generate', (req, res) => {
             if (err) {
                 return res.status(500).json({ error: err.message });
             }
-            res.json({ url: `https://${host}.com/?id=${this.session_id}` });
+
+            // Call the reload-cache API after successful insertion
+            axios.post('http://localhost:3000/reload-cache')
+                .then(response => consoleLogOut(`Generator`, `${response.data.message}`))
+                .catch(error => consoleErrorOut(`Generator`, `Error reloading cache: ${error.message}`));
+
+            res.json({ url: `https://${host}.com/?id=${session_id}` });
         }
-    );    
+    );
 });
+
 
 // 2. Fetch All URLs
 app.get('/sessions', (req, res) => {
