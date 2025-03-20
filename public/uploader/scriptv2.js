@@ -201,7 +201,7 @@ document.addEventListener("DOMContentLoaded", function () {
             }
         } catch (error) {
             // normal chunk upload error got 3 times retry
-            if (attempt < 1 && error.status !== 400) {
+            if (attempt < 3 && error.status !== 400) {
                 console.error(`Error uploading chunk ${chunkIndex+1} of ${file.name}`);
                 console.log(`Retrying chunk ${chunkIndex+1}, attempt ${attempt + 1}`);
                 await new Promise(resolve => setTimeout(resolve, 1000)); // Wait 1 second before retrying
