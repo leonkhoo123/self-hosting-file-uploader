@@ -19,6 +19,13 @@ function generateBase36Id(length = 32) {
         .join('');
 }
 
+function callReloadCache(){
+    // Call the reload-cache API after successful insertion
+    axios.post('http://localhost:3000/reload-cache')
+        .then(response => consoleLogOut(`Generator`, `${response.data.message}`))
+        .catch(error => consoleErrorOut(`Generator`, `Error reloading cache: ${error.message}`));
+}
+
 // 1. Generate Secure URL
 app.post('/generate', async (req, res) => {
     const { startTime, endTime, path } = req.body;
@@ -37,17 +44,11 @@ app.post('/generate', async (req, res) => {
             if (err) {
                 return res.status(500).json({ error: err.message });
             }
-
-            // Call the reload-cache API after successful insertion
-            axios.post('http://localhost:3000/reload-cache')
-                .then(response => consoleLogOut(`Generator`, `${response.data.message}`))
-                .catch(error => consoleErrorOut(`Generator`, `Error reloading cache: ${error.message}`));
-
+            callReloadCache();
             res.json({ url: `https://${host}.com/?id=${session_id}` });
         }
     );
 });
-
 
 // 2. Fetch All URLs
 app.get('/sessions', (req, res) => {
@@ -70,6 +71,7 @@ app.post('/disable', (req, res) => {
         if (err) {
             return res.status(500).json({ error: err.message });
         }
+        callReloadCache();
         res.json({ message: 'URL disabled successfully' });
     });
 });
