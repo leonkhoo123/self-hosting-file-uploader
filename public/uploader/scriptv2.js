@@ -99,65 +99,73 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     async function startUpload() {
-        console.log(`file length:${fileInput.files.length}`);
+        console.log(`file length: ${fileInput.files.length}`);
         renderFileList();
-        if(!uploadState){
-            console.log("start!!")
+        
+        if (!uploadState) {
+            console.log("start!!");
             uploadState = true;
+    
             let uploadedCount = 0, failedCount = 0;
             uploadHeader.textContent = `Uploading file (0/${fileInput.files.length})`;
             document.getElementById("uploadBtn").classList.add("hidden");
             document.getElementById("cancelBtn").classList.remove("hidden");
             selectFilesBtn.classList.add("hidden");
+    
             const CHUNK_SIZE = 7 * 1024 * 1024; // 7MB chunks
-            let failchunk = false;
-            for (const file of fileInput.files) {
-                if(!giveup){
-                    const totalChunks = Math.ceil(file.size / CHUNK_SIZE);
-                    for (let i = 0; i < totalChunks; i++) {
-                        let status = (totalChunks==1)? 'single' : (i == totalChunks-1) ? 'end' : (i == 0) ? 'start' : '';
-                        const start = i * CHUNK_SIZE;
-                        const end = Math.min(start + CHUNK_SIZE, file.size);
-                        const chunk = file.slice(start, end);
-
-                        const buffer = await chunk.arrayBuffer();
-                        const checksum = adler32(new Uint8Array(buffer)); // Compute Adler-32 checksum
-
-                        try {
-                            await uploadChunk(file, chunk, i, totalChunks, checksum, status);
-                        } catch (error) {
-                            failedCount++
-                            // failedCount++;
-                            updateProgressBarFailed(file.name);
-                            failchunk=true;
-                            break; // Stop uploading this file on failure
-                        }
-                        if(giveup){
-                            failedCount++
-                            // failedCount++;
-                            updateProgressBarCancel(file.name);
-                            console.log(`Aborted Chunk`)
-                            failchunk=true;
-                            break;
-                        }
-                        updateProgressBar(file.name,i,totalChunks);
+            const MAX_PARALLEL_UPLOADS = 3; // maximum parallel upload
+            let fileQueue = [...fileInput.files]; // Convert FileList to Array
+    
+            // Function to process a single file (uploads chunks sequentially)
+            async function processFile(file) {
+                let failchunk = false;
+                const totalChunks = Math.ceil(file.size / CHUNK_SIZE);
+    
+                for (let i = 0; i < totalChunks; i++) {
+                    let status = (totalChunks == 1) ? 'single' : (i == totalChunks - 1) ? 'end' : (i == 0) ? 'start' : '';
+                    const start = i * CHUNK_SIZE;
+                    const end = Math.min(start + CHUNK_SIZE, file.size);
+                    const chunk = file.slice(start, end);
+    
+                    const buffer = await chunk.arrayBuffer();
+                    const checksum = adler32(new Uint8Array(buffer)); // Compute Adler-32 checksum
+    
+                    try {
+                        await uploadChunk(file, chunk, i, totalChunks, checksum, status);
+                    } catch (error) {
+                        failedCount++;
+                        updateProgressBarFailed(file.name);
+                        failchunk = true;
+                        break; // Stop uploading this file on failure
                     }
-                    if(!failchunk){
-                       uploadedCount++
+    
+                    if (giveup) {
+                        failedCount++;
+                        updateProgressBarCancel(file.name);
+                        console.log(`Aborted Chunk`);
+                        failchunk = true;
+                        break;
                     }
-                    failchunk=false;
-                } else {
-                    failedCount++
-                    // failedCount++;
-                    updateProgressBarCancel(file.name);
-                    await new Promise(resolve => setTimeout(resolve, 550));
+    
+                    updateProgressBar(file.name, i, totalChunks);
                 }
-                updateFileList(file.name,uploadedCount+failedCount);
-
+    
+                if (!failchunk) {
+                    uploadedCount++;
+                }
+    
+                updateFileList(file.name, uploadedCount + failedCount);
             }
-            // upload ended reset all
-            uploadState=false;   
-            giveup=false;
+    
+            // Process files in parallel (max 3 at a time)
+            while (fileQueue.length > 0) {
+                let parallelTasks = fileQueue.splice(0, MAX_PARALLEL_UPLOADS).map(file => processFile(file));
+                await Promise.all(parallelTasks); // Wait for batch to complete
+            }
+    
+            // Upload ended, reset all states
+            uploadState = false;
+            giveup = false;
             if(fileInput.files.length>0){
                 uploadHeader.textContent = `Upload completed (${uploadedCount + failedCount}/${fileInput.files.length})`;
             } else{

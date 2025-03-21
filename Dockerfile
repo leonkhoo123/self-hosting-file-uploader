@@ -2,7 +2,7 @@
 FROM node:18-alpine
 
 # Install necessary packages (smbclient) without extra dependencies
-RUN apk add --no-cache samba-client && rm -rf /var/cache/apk/*
+# RUN apk add --no-cache samba-client && rm -rf /var/cache/apk/*
 
 # Set working directory to the project root
 WORKDIR /app
