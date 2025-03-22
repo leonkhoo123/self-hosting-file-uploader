@@ -4,7 +4,7 @@ document.addEventListener("DOMContentLoaded", function () {
     const protocol = isHttps ? "https" : "http";
     const host = window.location.host;
     const urlParams = new URLSearchParams(window.location.search);
-    const uploadId = urlParams.get("id"); // Get 'id' from URL (e.g., ?id=abc)
+    const uploadId = urlParams.has("id") && urlParams.get("id")?.trim() ? urlParams.get("id").trim() : "invalid";
     const healthCheckURL = `${protocol}://${host}/healthcheck/${uploadId}`;
     const apiURL = `${protocol}://${host}/upload-chunk/${uploadId}`;
 
@@ -101,7 +101,7 @@ document.addEventListener("DOMContentLoaded", function () {
     async function startUpload() {
         console.log(`file length: ${fileInput.files.length}`);
         renderFileList();
-        
+    
         if (!uploadState) {
             console.log("start!!");
             uploadState = true;
@@ -113,14 +113,14 @@ document.addEventListener("DOMContentLoaded", function () {
             selectFilesBtn.classList.add("hidden");
     
             const CHUNK_SIZE = 7 * 1024 * 1024; // 7MB chunks
-            const MAX_PARALLEL_UPLOADS = 3; // maximum parallel upload
+            const MAX_PARALLEL_UPLOADS = 3; // Max parallel uploads
             let fileQueue = [...fileInput.files]; // Convert FileList to Array
+            let uploadPromises = []; // Initialize properly
     
-            // Function to process a single file (uploads chunks sequentially)
             async function processFile(file) {
                 let failchunk = false;
                 const totalChunks = Math.ceil(file.size / CHUNK_SIZE);
-    
+                updateProgressBarStarting(file.name, totalChunks)
                 for (let i = 0; i < totalChunks; i++) {
                     let status = (totalChunks == 1) ? 'single' : (i == totalChunks - 1) ? 'end' : (i == 0) ? 'start' : '';
                     const start = i * CHUNK_SIZE;
@@ -155,32 +155,45 @@ document.addEventListener("DOMContentLoaded", function () {
                 }
     
                 updateFileList(file.name, uploadedCount + failedCount);
+    
+                // Start the next file immediately if available
+                if (fileQueue.length > 0) {
+                    let nextFile = fileQueue.shift();
+                    let nextPromise = processFile(nextFile);
+                    uploadPromises.push(nextPromise); // Track the new upload
+                    await nextPromise; // Wait for it to finish (prevents unhandled rejections)
+                }
             }
     
-            // Process files in parallel (max 3 at a time)
-            while (fileQueue.length > 0) {
-                let parallelTasks = fileQueue.splice(0, MAX_PARALLEL_UPLOADS).map(file => processFile(file));
-                await Promise.all(parallelTasks); // Wait for batch to complete
+            // Start initial uploads (max 3) & track them
+            for (let i = 0; i < MAX_PARALLEL_UPLOADS && fileQueue.length > 0; i++) {
+                let nextFile = fileQueue.shift();
+                uploadPromises.push(processFile(nextFile));
             }
+    
+            // Wait until all uploads finish
+            await Promise.all(uploadPromises);
     
             // Upload ended, reset all states
             uploadState = false;
             giveup = false;
-            if(fileInput.files.length>0){
+    
+            if (fileInput.files.length > 0) {
                 uploadHeader.textContent = `Upload completed (${uploadedCount + failedCount}/${fileInput.files.length})`;
-            } else{
+            } else {
                 uploadHeader.textContent = "Select Files to Upload";
             }
+    
             document.getElementById("uploadBtn").classList.remove("hidden");
             document.getElementById("cancelBtn").classList.add("hidden");
             selectFilesBtn.classList.remove("hidden");
             document.getElementById("fileInput").value = "";
-            console.log("end!!")
-        }else{
-            console.log(`Please wait upload to complete.`)
-        }        
-    }
-
+            console.log("end!!");
+        } else {
+            console.log(`Please wait for the upload to complete.`);
+        }
+    } 
+    
     function stopUpload(){
         if(uploadState){
             giveup=true;
@@ -248,6 +261,16 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     }
 
+    function updateProgressBarStarting(filename,totalChunks) {
+        const progressBar = document.getElementById(`progress-${filename}`);
+        if (!progressBar) return; // Skip if the element isn't found
+        progressBar.style.transition = "width 0.5s ease-in-out"; // Apply smooth transition
+
+        console.log(`Starting filename: ${filename}, totalChunks: ${totalChunks}`)
+        document.getElementById(`progress-${filename}`).style.width = `${0}%`; 
+        document.getElementById(`status-${filename}`).textContent = `${0}%`;
+    }
+
     function updateProgressBar(filename,chunkIndex,totalChunks) {
         console.log(`filename: ${filename}, chunk: ${chunkIndex+1}, totalChunks: ${totalChunks}, Percent: ${(((chunkIndex + 1) / totalChunks) * 100).toFixed(0)}%`)
         document.getElementById(`progress-${filename}`).style.width = `${(((chunkIndex + 1) / totalChunks) * 100).toFixed(0)}%`; 
@@ -268,22 +291,24 @@ document.addEventListener("DOMContentLoaded", function () {
         document.getElementById(`status-${filename}`).style.color = 'red';
         document.getElementById(`status-${filename}`).textContent = `Cancel`;
 
-        const listItem = document.getElementById(`list-${filename}`);
+        if(fileInput.files.length>1 && uploadCount!=fileInput.files.length){
+            const listItem = document.getElementById(`list-${filename}`);
+            
+            if (!listItem) return; // Skip if the element isn't found
         
-        if (!listItem) return; // Skip if the element isn't found
-    
-        listItem.style.transition = "opacity 0.3s, transform 0.3s";
-        listItem.style.opacity = "0";
-        listItem.style.transform = "translateY(35px)";
-        
-        setTimeout(() => {
-            fileList.appendChild(listItem); // Move to the bottom
-        }, 300); // Wait for animation to complete
-        
-        setTimeout(() => {
-            listItem.style.opacity = "1";
-            listItem.style.transform = "translateY(0px)";
-        }, 500); // Slight delay after moving
+            listItem.style.transition = "opacity 0.3s, transform 0.3s";
+            listItem.style.opacity = "0";
+            listItem.style.transform = "translateY(35px)";
+            
+            setTimeout(() => {
+                fileList.appendChild(listItem); // Move to the bottom
+            }, 300); // Wait for animation to complete
+            
+            setTimeout(() => {
+                listItem.style.opacity = "1";
+                listItem.style.transform = "translateY(0px)";
+            }, 500); // Slight delay after moving
+        }
     }
 
     function adler32(buffer) {

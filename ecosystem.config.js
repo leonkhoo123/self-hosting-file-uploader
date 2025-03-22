@@ -7,7 +7,6 @@ module.exports = {
             ignore_watch: [
                 "upload_ids.db",
                 "upload_ids.db-journal",
-                "temp_uploads",  // Ignore all files in temp_uploads/
                 "logs",          // Ignore log directory
                 "*.log",         // Ignore all .log files
                 "node_modules",  // Ignore dependencies
@@ -26,7 +25,6 @@ module.exports = {
             ignore_watch: [
                 "upload_ids.db",
                 "upload_ids.db-journal",
-                "temp_uploads",
                 "logs",
                 "*.log",
                 "node_modules",

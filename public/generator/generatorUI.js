@@ -194,9 +194,24 @@ document.addEventListener("DOMContentLoaded", function () {
 
     window.copyToClipboard = function (id) {
         const url = `https://hostname.com/?id=${id}`;
-        navigator.clipboard.writeText(url);
-        toast_message("Copied to clipboard!");
+        // navigator.clipboard.writeText(url);
 
+        if (!navigator.clipboard) {
+            console.warn("Clipboard API not available, using fallback");
+            const textArea = document.createElement("textarea");
+            textArea.value = url;
+            document.body.appendChild(textArea);
+            textArea.select();
+            document.execCommand("copy");
+            document.body.removeChild(textArea);
+        } else {
+            navigator.clipboard.writeText(url).then(() => {
+                console.log("Copied to clipboard!");
+            }).catch(err => {
+                console.error("Clipboard API failed:", err);
+            });
+        }
+        toast_message("Copied to clipboard!");
     };
     
     // Disable a URL

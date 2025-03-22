@@ -1,4 +1,3 @@
-require("dotenv").config();
 const cron = require("node-cron");
 const express = require("express");
 const multer = require("multer");
@@ -11,6 +10,9 @@ const PORT = 3000;
 const servername = "Leon NAS"
 let isClearing = false;
 const NAS_PATH = "/mnt/nas_uploads"; // Mounted NAS path inside the container
+// debug path
+// const NAS_PATH = "/mnt/c/my_docker_image/testpath"; // Mounted NAS path inside the container
+const share_folder = path.join(NAS_PATH, "share_folder"); // Using direct NAS mount 
 
 // Middleware to parse JSON body
 app.use(express.json());
@@ -83,7 +85,7 @@ app.post("/upload-chunk/:id",checkUploadAuth, upload.single("chunk"), async (req
         return res.status(400).json({ error: "Invalid chunk data" });
     }
 
-    const nas_mount_location = path.join(NAS_PATH, req.uploadPath); // Using direct NAS mount
+    const nas_mount_location = path.join(share_folder, req.uploadPath); // Using direct NAS mount
 
     const sessionUploadDir = path.join(uploadDir, req_sessionId); // Form new dir for each visit session
     if (!fs.existsSync(sessionUploadDir)) {
