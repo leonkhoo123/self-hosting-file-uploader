@@ -291,7 +291,7 @@ document.addEventListener("DOMContentLoaded", function () {
         document.getElementById(`status-${filename}`).style.color = 'red';
         document.getElementById(`status-${filename}`).textContent = `Cancel`;
 
-        if(fileInput.files.length>1 && uploadCount!=fileInput.files.length){
+        if(fileInput.files.length>1){
             const listItem = document.getElementById(`list-${filename}`);
             
             if (!listItem) return; // Skip if the element isn't found
