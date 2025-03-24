@@ -76,15 +76,16 @@ document.addEventListener("DOMContentLoaded", function () {
             fileList.innerHTML = "";
             for (let i = 0; i < Math.min(fileInput.files.length, listlength); i++) {
                 const file = fileInput.files[i];
+                const safeFileName = encodeURIComponent(file.name); 
                 const li = document.createElement("li");
                 li.innerHTML = `
-                    <div id="list-${file.name}" class="flex justify-between items-center p-2 rounded bg-gray-100">
-                        <span class = "w-4/12 overflow-hidden text-ellipsis whitespace-nowrap mr-3">${file.name}</span>
-                        <div class="w-5/12 sm:w-6/12 h-2 bg-gray-300 rounded overflow-hidden">
-                            <div id="progress-${file.name}" class="h-full bg-gray-500 w-0"></div>
+                    <div id="list-${safeFileName}" class="flex justify-between items-center p-2 rounded bg-gray-100">
+                        <span id=filename-${safeFileName} class = "w-full overflow-hidden text-ellipsis whitespace-nowrap mr-3">${file.name}</span>
+                        <div id="progressbar-${safeFileName}" class="hidden w-5/12 sm:w-6/12 h-2 bg-gray-300 rounded overflow-hidden">
+                            <div id="progress-${safeFileName}" class="h-full bg-gray-500 w-0"></div>
                         </div>
-                        <div class="flex w-3/12 sm:w-2/12 overflow-hidden justify-center items-center">
-                            <span id="status-${file.name}"  class="text-sm text-gray-600 ml-2">Pending</span>
+                        <div id="statusbar-${safeFileName}" class="hidden flex w-3/12 sm:w-2/12 overflow-hidden justify-center items-center">
+                            <span id="status-${safeFileName}"  class="text-sm text-gray-600 ml-2">Pending</span>
                         </div>
                     </div>
                 `;
@@ -98,9 +99,34 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     }
 
+    // <div id="list-${file.name}" class="flex justify-between items-center p-2 rounded bg-gray-100">
+    // <span class = "w-4/12 overflow-hidden text-ellipsis whitespace-nowrap mr-3">${file.name}</span>
+    // <div class="w-5/12 sm:w-6/12 h-2 bg-gray-300 rounded overflow-hidden">
+    //     <div id="progress-${file.name}" class="h-full bg-gray-500 w-0"></div>
+    // </div>
+    // <div class="flex w-3/12 sm:w-2/12 overflow-hidden justify-center items-center">
+    //     <span id="status-${file.name}"  class="text-sm text-gray-600 ml-2">Pending</span>
+    // </div>
+    // </div>
+
+    function renderFileListStarting() {
+        if (fileInput.files.length > 0) {
+            for (let i = 0; i < Math.min(fileInput.files.length, listlength); i++) {
+                const file = fileInput.files[i];
+                const safeFileName = encodeURIComponent(file.name); 
+                // filename-${file.name}
+                document.getElementById(`filename-${safeFileName}`).classList.remove("w-full");
+                document.getElementById(`filename-${safeFileName}`).classList.add("w-4/12");
+                document.getElementById(`progressbar-${safeFileName}`).classList.remove("hidden");
+                document.getElementById(`statusbar-${safeFileName}`).classList.remove("hidden");
+            };
+        }
+    }
+
     async function startUpload() {
         console.log(`file length: ${fileInput.files.length}`);
         renderFileList();
+        renderFileListStarting();
     
         if (!uploadState) {
             console.log("start!!");
@@ -240,10 +266,11 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     function updateFileList(filename,uploadCount){
+        const safeFileName = encodeURIComponent(filename); 
         uploadHeader.textContent = `Uploading file (${uploadCount}/${fileInput.files.length})`;
 
         if(fileInput.files.length>1 && uploadCount!=fileInput.files.length){
-            const listItem = document.getElementById(`list-${filename}`);
+            const listItem = document.getElementById(`list-${safeFileName}`);
             if (!listItem) return; // Skip if the element isn't found
     
             listItem.style.transition = "opacity 0.5s, transform 0.5s";
@@ -262,37 +289,41 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     function updateProgressBarStarting(filename,totalChunks) {
-        const progressBar = document.getElementById(`progress-${filename}`);
+        const safeFileName = encodeURIComponent(filename); 
+        const progressBar = document.getElementById(`progress-${safeFileName}`);
         if (!progressBar) return; // Skip if the element isn't found
         progressBar.style.transition = "width 0.5s ease-in-out"; // Apply smooth transition
 
         console.log(`Starting filename: ${filename}, totalChunks: ${totalChunks}`)
-        document.getElementById(`progress-${filename}`).style.width = `${0}%`; 
-        document.getElementById(`status-${filename}`).textContent = `${0}%`;
+        document.getElementById(`progress-${safeFileName}`).style.width = `${0}%`; 
+        document.getElementById(`status-${safeFileName}`).textContent = `${0}%`;
     }
 
     function updateProgressBar(filename,chunkIndex,totalChunks) {
         console.log(`filename: ${filename}, chunk: ${chunkIndex+1}, totalChunks: ${totalChunks}, Percent: ${(((chunkIndex + 1) / totalChunks) * 100).toFixed(0)}%`)
-        document.getElementById(`progress-${filename}`).style.width = `${(((chunkIndex + 1) / totalChunks) * 100).toFixed(0)}%`; 
-        document.getElementById(`status-${filename}`).textContent = `${(((chunkIndex + 1) / totalChunks) * 100).toFixed(0)}%`;
+        const safeFileName = encodeURIComponent(filename); 
+        document.getElementById(`progress-${safeFileName}`).style.width = `${(((chunkIndex + 1) / totalChunks) * 100).toFixed(0)}%`; 
+        document.getElementById(`status-${safeFileName}`).textContent = `${(((chunkIndex + 1) / totalChunks) * 100).toFixed(0)}%`;
         if((chunkIndex+1) == totalChunks){
-            document.getElementById(`progress-${filename}`).style.backgroundColor = '#00c951';
+            document.getElementById(`progress-${safeFileName}`).style.backgroundColor = '#00c951';
         }
     }
 
     function updateProgressBarFailed(filename) {
         console.log(`filename: ${filename}, failed to upload`)
-        document.getElementById(`status-${filename}`).style.color = 'red';
-        document.getElementById(`status-${filename}`).textContent = `Fail`;
+        const safeFileName = encodeURIComponent(filename); 
+        document.getElementById(`status-${safeFileName}`).style.color = 'red';
+        document.getElementById(`status-${safeFileName}`).textContent = `Fail`;
     }
 
     function updateProgressBarCancel(filename) {
         console.log(`filename: ${filename}, cancelled`)
-        document.getElementById(`status-${filename}`).style.color = 'red';
-        document.getElementById(`status-${filename}`).textContent = `Cancel`;
+        const safeFileName = encodeURIComponent(filename); 
+        document.getElementById(`status-${safeFileName}`).style.color = 'red';
+        document.getElementById(`status-${safeFileName}`).textContent = `Cancel`;
 
         if(fileInput.files.length>1){
-            const listItem = document.getElementById(`list-${filename}`);
+            const listItem = document.getElementById(`list-${safeFileName}`);
             
             if (!listItem) return; // Skip if the element isn't found
         

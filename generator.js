@@ -3,7 +3,7 @@ const app = express();
 const port = 3001;
 const db = require('./database'); // Import database.js
 const { consoleLogOut, consoleErrorOut } = require("./logger"); // import custom logger
-const host = `linkliang`
+const hostname = process.env.HOSTNAME || "hostname.com";
 const axios = require('axios');
 
 app.use(express.json());
@@ -45,7 +45,7 @@ app.post('/generate', async (req, res) => {
                 return res.status(500).json({ error: err.message });
             }
             callReloadCache();
-            res.json({ url: `https://${host}.com/?id=${session_id}` });
+            res.json({ url: `https://${hostname}/?id=${session_id}` });
         }
     );
 });
@@ -56,7 +56,11 @@ app.get('/sessions', (req, res) => {
         if (err) {
             return res.status(500).json({ error: err.message });
         }
-        res.json(rows);
+        // res.json(rows);
+        res.json({
+            hostname: hostname, // or use req.hostname
+            sessions: rows
+        });
     });
 });
 
