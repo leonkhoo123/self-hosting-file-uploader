@@ -122,6 +122,7 @@ document.addEventListener("DOMContentLoaded", function () {
             .then(response => response.json())
             .then(data => {
                 const hostname = data.hostname; // Extract hostname
+                const uploadPath = data.uploadPath; // Extract sessions list
                 const urls = data.sessions; // Extract sessions list
 
                 urlList.innerHTML = "";
@@ -186,7 +187,7 @@ document.addEventListener("DOMContentLoaded", function () {
                         };
                         listItem.appendChild(disableSmallBtn);
 
-                        contentDiv.onclick = () => copyToClipboard(hostname,url.session_id);
+                        contentDiv.onclick = () => copyToClipboard(hostname,uploadPath,url.session_id);
                     }
 
                 });
@@ -195,8 +196,8 @@ document.addEventListener("DOMContentLoaded", function () {
     
     loadUrls();
 
-    window.copyToClipboard = function (hostname,id) {
-        const url = `https://${hostname}/?id=${id}`;
+    window.copyToClipboard = function (hostname,uploadPath,id) {
+        const url = `https://${hostname}/${uploadPath}/?id=${id}`;
         // navigator.clipboard.writeText(url);
 
         if (!navigator.clipboard) {

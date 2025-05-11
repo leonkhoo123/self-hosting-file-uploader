@@ -4,7 +4,8 @@ const { consoleLogOut, consoleErrorOut } = require("./logger"); // import custom
 
 const NAS_PATH = "/mnt/nas_uploads"; // Mounted NAS path inside the container
 // debug path
-// const NAS_PATH = "/mnt/c/my_docker_image/testpath"; // Mounted NAS path inside the container
+// const NAS_PATH = "/mnt/c/my_docker_image/testpath"; // Debug NAS path inside the container
+// const NAS_PATH = "/home/leon/Documents/my_volume"; // debug path for direct running
 
 // Path to the database file (stores it in your app folder)
 const dbPath = path.join(NAS_PATH, 'upload_ids.db');

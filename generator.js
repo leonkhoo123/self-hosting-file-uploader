@@ -5,6 +5,7 @@ const db = require('./database'); // Import database.js
 const { consoleLogOut, consoleErrorOut } = require("./logger"); // import custom logger
 const hostname = process.env.HOSTNAME || "hostname.com";
 const axios = require('axios');
+const uploadBasePath = 'uploads'
 
 app.use(express.json());
 app.use(express.static("public/generator"));
@@ -21,7 +22,7 @@ function generateBase36Id(length = 32) {
 
 function callReloadCache(){
     // Call the reload-cache API after successful insertion
-    axios.post('http://localhost:3000/reload-cache')
+    axios.post(`http://localhost:3000/${uploadBasePath}/reload-cache`)
         .then(response => consoleLogOut(`Generator`, `${response.data.message}`))
         .catch(error => consoleErrorOut(`Generator`, `Error reloading cache: ${error.message}`));
 }
@@ -45,7 +46,7 @@ app.post('/generate', async (req, res) => {
                 return res.status(500).json({ error: err.message });
             }
             callReloadCache();
-            res.json({ url: `https://${hostname}/?id=${session_id}` });
+            res.json({ url: `https://${hostname}/${uploadBasePath}/?id=${session_id}` });
         }
     );
 });
@@ -59,6 +60,7 @@ app.get('/sessions', (req, res) => {
         // res.json(rows);
         res.json({
             hostname: hostname, // or use req.hostname
+            uploadPath: uploadBasePath,
             sessions: rows
         });
     });

@@ -11,15 +11,24 @@ const servername = "Leon NAS"
 let isClearing = false;
 const NAS_PATH = "/mnt/nas_uploads"; // Mounted NAS path inside the container
 // debug path
-// const NAS_PATH = "/mnt/c/my_docker_image/testpath"; // Mounted NAS path inside the container
+// const NAS_PATH = "/mnt/c/my_docker_image/testpath"; // debug path for container
+// const NAS_PATH = "/home/leon/Documents/my_volume"; // debug path for direct running
 const share_folder = path.join(NAS_PATH, "share_folder"); // Using direct NAS mount 
+const basePath = "/uploads";
 
 // Middleware to parse JSON body
-app.use(express.json());
-app.use(express.static("public/uploader"));
-app.use("/style.css", (req, res) => {
-    res.sendFile(__dirname + "/public/style.css");
-});
+// app.use(express.json());
+// app.use(express.static("public/uploader"));
+// app.use("/style.css", (req, res) => {
+//     res.sendFile(__dirname + "/public/style.css");
+// });
+
+//Create router
+const router = express.Router();
+//Apply middleware to router
+router.use(express.json());
+
+
 
 const uploadDir = path.join(NAS_PATH,"temp_uploads/"); // Using direct NAS mount
 
@@ -74,12 +83,12 @@ const checkUploadAuth = (req, res, next) => {
 };
 
 // API to Reload Cache
-app.post('/reload-cache', (req, res) => {
+router.post('/reload-cache', (req, res) => {
     loadUploadSessions();
     res.status(200).json({ message: "Upload session cache reloaded successfully" });
 });
 
-app.post("/upload-chunk/:id",checkUploadAuth, upload.single("chunk"), async (req, res) => {
+router.post("/upload-chunk/:id",checkUploadAuth, upload.single("chunk"), async (req, res) => {
     const { originalName, chunkIndex, totalChunks, checksum , req_sessionId, status} = req.body;
     if (!req.file || !originalName || chunkIndex === undefined || !totalChunks || !checksum || !req_sessionId) {
         return res.status(400).json({ error: "Invalid chunk data" });
@@ -146,7 +155,7 @@ app.post("/upload-chunk/:id",checkUploadAuth, upload.single("chunk"), async (req
     res.status(200).json({ message: `Chunk ${chunkIndex} uploaded successfully` });
 });
 
-app.get("/healthcheck/:id",checkUploadAuth, async (req, res) => {
+router.get("/healthcheck/:id",checkUploadAuth, async (req, res) => {
     try {
         const { id } = req.params; // Extract id from request parameters
         
@@ -306,10 +315,22 @@ cron.schedule("0 5 * * *", clearTempUploads, {
     timezone: "Asia/Singapore",
 });
 
+// 4. Mount router at basePath
+app.use(basePath, router);
+
+// 5. Static UI under basePath
+app.use(basePath, express.static(path.join(__dirname, "public/uploader")));
+
+// 6. Shared style.css served explicitly
+app.use(`${basePath}/style.css`, (req, res) => {
+    res.sendFile(path.join(__dirname, "public/style.css"));
+});
+
+// Start server
 app.listen(PORT, () => {
     clearTempUploads();
     loadUploadSessions();
-    consoleLogOut(`APP`,`Server is running on http://localhost:${PORT}`);
+    consoleLogOut(`APP`, `Server is running on http://localhost:${PORT}${basePath}`);
 });
 
 

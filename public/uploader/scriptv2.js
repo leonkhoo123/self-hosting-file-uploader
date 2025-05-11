@@ -5,8 +5,9 @@ document.addEventListener("DOMContentLoaded", function () {
     const host = window.location.host;
     const urlParams = new URLSearchParams(window.location.search);
     const uploadId = urlParams.has("id") && urlParams.get("id")?.trim() ? urlParams.get("id").trim() : "invalid";
-    const healthCheckURL = `${protocol}://${host}/healthcheck/${uploadId}`;
-    const apiURL = `${protocol}://${host}/upload-chunk/${uploadId}`;
+    const basePath = "uploads";
+    const healthCheckURL = `${protocol}://${host}/${basePath}/healthcheck/${uploadId}`;
+    const apiURL = `${protocol}://${host}/${basePath}/upload-chunk/${uploadId}`;
 
     //UI related const
     const fileInput = document.getElementById("fileInput");
