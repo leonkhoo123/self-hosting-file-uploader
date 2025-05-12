@@ -1,11 +1,12 @@
 # 📂 Self-Hosting File Uploader
 
-A lightweight Express.js web server that enables secure file uploads to your NAS or any self-hosted server.  
-Public access is served via Cloudflare Tunnel, while admin control is restricted to VPN or local network access.
+- A lightweight Express.js web server that enables secure file uploads to your NAS or any self-hosted server.  
+
+- Public access is served via Cloudflare Tunnel, while admin control is restricted to VPN or local network access.
 
 
----
-
+<br>
+<br>
 
 ## 🛠️ Features
 
@@ -24,7 +25,8 @@ Public access is served via Cloudflare Tunnel, while admin control is restricted
   - Admin generator: `http://localhost:3001/generator`
 
 
----
+<br>
+<br>
 
 
 ## 📦 Installation
@@ -37,7 +39,8 @@ Public access is served via Cloudflare Tunnel, while admin control is restricted
 npm install
 ````
 
----
+<br>
+<br>
 
 
 ## 🚀 Execution
@@ -66,19 +69,21 @@ ENV=local node server.js
   `http://localhost:3000/uploads/?id=<generated-id>`
 
 
----
+<br>
+<br>
 
 
 ## 🌍 Environment Variables
 
 | Variable     | Description                                                                                      |
 | ------------ | ------------------------------------------------------------------------------------------------ |
-| `ENV`        | Set to `prod` to mount real NAS directory (`/mnt/nas_uploads`). Local testing uses a debug path. |
+| `ENV`        | Set to `prod` to mount real NAS directory (`/mnt/nas_uploads`). `local` for debug and testing.   |
 | `CHUNK_SIZE` | Maximum file chunk size in MB (e.g., `3` for 3MB). Smaller values help with poor networks.       |
 | `HOSTNAME`   | Used in admin to generate full upload URLs (e.g., `https://mydomain.com`).                       |
 
 
----
+<br>
+<br>
 
 
 ## 🐳 Docker Support
@@ -98,7 +103,8 @@ docker save -o synology-upload-mini-v1.tar synology-upload-mini:v1
 > Useful if you want to manually import the image on your NAS without using Docker Hub.
 
 
----
+<br>
+<br>
 
 
 ## 🧱 NAS Setup (Production Mode)
@@ -110,32 +116,33 @@ If using in `prod` mode:
 
 ```bash
 docker run -d \
-  -p 3000:3000 \
-  -v /your/server/upload/path:/mnt/nas_uploads \
+  -p 3000:3000 \    
+  -p 3001:3001 \   
+  -v /your/server/upload/path:/mnt/nas_uploads \  # Mount upload directory
   synology-upload-mini:v1
 ```
 
----
+<br>
+<br>
 
 ## ⚠️ Security Notes
 
-* `adminserver.js` **should NOT be exposed publicly** unless proper authentication is added.
+* `adminserver.js` **should NOT be exposed publicly** unless proper authentication is added (currently **NOT**).
 * Use **Cloudflare Tunnel** to expose only `server.js`.
 * Each upload ID is:
 
   * Time-limited
   * Optional to revoke early via admin
 
----
+<br>
+<br>
 
 ## 📌 Roadmap Ideas
 
 * [ ] Add file sharing support (cloud drive style)
 
----
+<br>
+<br>
+<br>
+<br>
 
-## 📄 License
-
-MIT — free to use, modify, and deploy.
-
-```
