@@ -1,7 +1,7 @@
-````markdown
-# 📂 Synology Upload Mini
+# 📂 Self-Hosting File Uploader
 
-A lightweight Express.js web server that enables secure file uploads to your NAS, with public access via Cloudflare Tunnel and administrative control via VPN or local network.
+A lightweight Express.js web server that enables secure file uploads to your NAS or any self-hosted server.  
+Public access is served via Cloudflare Tunnel, while admin control is restricted to VPN or local network access.
 
 ---
 
@@ -32,8 +32,6 @@ A lightweight Express.js web server that enables secure file uploads to your NAS
 ```bash
 npm install
 ````
-
----
 
 ## 🚀 Execution
 
