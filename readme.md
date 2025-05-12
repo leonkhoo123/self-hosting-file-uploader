@@ -3,7 +3,9 @@
 A lightweight Express.js web server that enables secure file uploads to your NAS or any self-hosted server.  
 Public access is served via Cloudflare Tunnel, while admin control is restricted to VPN or local network access.
 
+
 ---
+
 
 ## 🛠️ Features
 
@@ -21,7 +23,9 @@ Public access is served via Cloudflare Tunnel, while admin control is restricted
   - Public uploads: `http://<hostname>:3000/uploads/?id=<generated-id>`
   - Admin generator: `http://localhost:3001/generator`
 
+
 ---
+
 
 ## 📦 Installation
 
@@ -32,6 +36,9 @@ Public access is served via Cloudflare Tunnel, while admin control is restricted
 ```bash
 npm install
 ````
+
+---
+
 
 ## 🚀 Execution
 
@@ -58,7 +65,9 @@ ENV=local node server.js
 * Upload access:
   `http://localhost:3000/uploads/?id=<generated-id>`
 
+
 ---
+
 
 ## 🌍 Environment Variables
 
@@ -68,7 +77,9 @@ ENV=local node server.js
 | `CHUNK_SIZE` | Maximum file chunk size in MB (e.g., `3` for 3MB). Smaller values help with poor networks.       |
 | `HOSTNAME`   | Used in admin to generate full upload URLs (e.g., `https://mydomain.com`).                       |
 
+
 ---
+
 
 ## 🐳 Docker Support
 
@@ -86,19 +97,21 @@ docker save -o synology-upload-mini-v1.tar synology-upload-mini:v1
 
 > Useful if you want to manually import the image on your NAS without using Docker Hub.
 
+
 ---
+
 
 ## 🧱 NAS Setup (Production Mode)
 
 If using in `prod` mode:
 
-* Ensure your NAS directory is mounted into `/mnt/nas_uploads` inside the container.
+* Ensure your local directory is mounted into `/mnt/nas_uploads` inside the container.
 * Example `docker run` (simplified):
 
 ```bash
 docker run -d \
   -p 3000:3000 \
-  -v /volume1/upload:/mnt/nas_uploads \
+  -v /your/server/upload/path:/mnt/nas_uploads \
   synology-upload-mini:v1
 ```
 
@@ -117,10 +130,7 @@ docker run -d \
 
 ## 📌 Roadmap Ideas
 
-* [ ] Add login/auth for admin dashboard
-* [ ] Add file listing and download support (cloud drive style)
-* [ ] Support resumable uploads
-* [ ] Add per-upload size quota
+* [ ] Add file sharing support (cloud drive style)
 
 ---
 
