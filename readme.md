@@ -1,14 +1,3 @@
-Yes, GitHub's `README.md` supports full [Markdown syntax](https://docs.github.com/en/get-started/writing-on-github/getting-started-with-writing-and-formatting-on-github/basic-writing-and-formatting-syntax), including:
-
-* Code blocks (` ``` `)
-* Tables
-* Headings (`#`, `##`, etc.)
-* Links and checklists
-
-Here’s the enhanced `README.md` content in **Markdown format** you can copy directly into your `README.md` file:
-
----
-
 ````markdown
 # 📂 Synology Upload Mini
 
@@ -141,14 +130,4 @@ docker run -d \
 
 MIT — free to use, modify, and deploy.
 
-```
-
----
-
-✅ **Summary**:
-- You can copy-paste this directly into your `README.md`.
-- It uses proper GitHub-supported markdown: ✅ headings, ✅ tables, ✅ code blocks, ✅ emojis.
-- Let me know if you want `docker-compose.yml` or `.env.example` added.
-
-Would you like a matching `.env.example` file as well?
 ```
