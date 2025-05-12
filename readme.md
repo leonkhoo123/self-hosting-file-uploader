@@ -128,7 +128,7 @@ docker run -d \
 ## ⚠️ Security Notes
 
 * `adminserver.js` **should NOT be exposed publicly** unless proper authentication is added (currently **NOT**).
-* Use **Cloudflare Tunnel** to expose only `server.js`.
+* Expose only `server.js`.
 * Each upload ID is:
 
   * Time-limited
