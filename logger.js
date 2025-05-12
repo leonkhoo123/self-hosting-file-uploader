@@ -8,13 +8,13 @@ function getFormattedTime() {
 
 // log output pattern
 function consoleLogOut(application,sessionId, ...messages) {
-    let session_id = sessionId || "";
-    console.log(`[${getFormattedTime()}][${application}][sesionId:${session_id}][INFO]:`, ...messages);
+    let session_id = sessionId || "session_null";
+    console.log(`[${getFormattedTime()}][${application}][${session_id}][INFO]:`, ...messages);
 }
 
 function consoleErrorOut(application,sessionId, ...messages) {
-    let session_id = sessionId || "";
-    console.error(`[${getFormattedTime()}][${application}][sesionId:${session_id}][ERROR]:`, ...messages);
+    let session_id = sessionId || "session_null";
+    console.error(`[${getFormattedTime()}][${application}][${session_id}][ERROR]:`, ...messages);
 }
 
 module.exports = { consoleLogOut, consoleErrorOut };

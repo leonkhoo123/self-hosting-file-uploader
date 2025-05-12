@@ -29,7 +29,7 @@ cron.schedule("0 5 * * *", uploads.clearTempUploads, {
 
 // Start server
 app.listen(PORT, () => {
-    consoleLogOut(applicationName,``, `Starting server with environment: ${envMode}, chunk size: ${chunkSize}MB`);
+    consoleLogOut(applicationName,``, `Starting server with env: ${envMode}, chunk size: ${chunkSize}MB`);
     uploads.clearTempUploads();
     uploads.loadUploadSessions();
     consoleLogOut(applicationName,``, `Server is running on http://localhost:${PORT}`);
