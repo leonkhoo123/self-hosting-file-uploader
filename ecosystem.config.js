@@ -19,8 +19,8 @@ module.exports = {
             merge_logs: true,
         },
         {
-            name: "generator",
-            script: "./generator.js",
+            name: "adminserver",
+            script: "./adminserver.js",
             watch: true,
             ignore_watch: [
                 "upload_ids.db",

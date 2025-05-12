@@ -18,6 +18,7 @@ document.addEventListener("DOMContentLoaded", function () {
     const titleArea = document.getElementById("titleArea");
     const uploadHeaderHolder = document.getElementById("uploadHeaderHolder");
     const listlength = 100; 
+    let chunkSize = 7; // 7MB default
     let uploadState = false;
     let giveup = false;
     selectFilesBtn.addEventListener("click", () => fileInput.click());
@@ -48,6 +49,7 @@ document.addEventListener("DOMContentLoaded", function () {
         if (result.sessionId) {
             localStorage.setItem("sessionId", result.sessionId);
         }
+        chunkSize = result.chunkSize || 7; // Set chunk size from server response (default 7MB)
 
         // Attach the event listener AFTER adding the button to the DOM
         document.getElementById("uploadBtn").addEventListener("click", startUpload);
@@ -125,7 +127,7 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     async function startUpload() {
-        console.log(`file length: ${fileInput.files.length}`);
+        console.log(`Preparing upload for ${fileInput.files.length} files...`);
         renderFileList();
         renderFileListStarting();
     
@@ -138,8 +140,9 @@ document.addEventListener("DOMContentLoaded", function () {
             document.getElementById("uploadBtn").classList.add("hidden");
             document.getElementById("cancelBtn").classList.remove("hidden");
             selectFilesBtn.classList.add("hidden");
-    
-            const CHUNK_SIZE = 7 * 1024 * 1024; // 7MB chunks
+            
+            console.log(`chunkSize: ${chunkSize}MB`);
+            const CHUNK_SIZE = chunkSize * 1024 * 1024; // convert chunkSize to byte 
             const MAX_PARALLEL_UPLOADS = 3; // Max parallel uploads
             let fileQueue = [...fileInput.files]; // Convert FileList to Array
             let uploadPromises = []; // Initialize properly

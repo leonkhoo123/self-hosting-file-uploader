@@ -197,7 +197,12 @@ document.addEventListener("DOMContentLoaded", function () {
     loadUrls();
 
     window.copyToClipboard = function (hostname,uploadPath,id) {
-        const url = `https://${hostname}/${uploadPath}/?id=${id}`;
+        let protocol = `https`;
+        
+        if(hostname==`localhost:3000`) {
+            protocol = `http`
+        }
+        const url = `${protocol}://${hostname}/${uploadPath}/?id=${id}`;
         // navigator.clipboard.writeText(url);
 
         if (!navigator.clipboard) {

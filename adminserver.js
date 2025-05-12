@@ -3,7 +3,7 @@ const app = express();
 const port = 3001;
 const db = require('./database'); // Import database.js
 const { consoleLogOut, consoleErrorOut } = require("./logger"); // import custom logger
-const hostname = process.env.HOSTNAME || "hostname.com";
+const hostname = process.env.HOSTNAME || "localhost:3000";
 const axios = require('axios');
 const uploadBasePath = 'uploads'
 

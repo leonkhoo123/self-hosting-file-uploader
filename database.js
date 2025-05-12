@@ -1,21 +1,30 @@
 const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
 const { consoleLogOut, consoleErrorOut } = require("./logger"); // import custom logger
-
-const NAS_PATH = "/mnt/nas_uploads"; // Mounted NAS path inside the container
-// debug path
-// const NAS_PATH = "/mnt/c/my_docker_image/testpath"; // Debug NAS path inside the container
-// const NAS_PATH = "/home/leon/Documents/my_volume"; // debug path for direct running
+let NAS_PATH;
+const envMode = process.env.ENV || 'prod'; // fallback to 'production'
+switch (envMode) {
+    case 'docker-dev':
+        NAS_PATH = "/mnt/c/my_docker_image/testpath";
+        break;
+    case 'local':
+        NAS_PATH = "/home/leon/Documents/my_volume";
+        break;
+    case 'prod':
+    default:
+        NAS_PATH = "/mnt/nas_uploads";
+        break;
+}
 
 // Path to the database file (stores it in your app folder)
 const dbPath = path.join(NAS_PATH, 'upload_ids.db');
-const sessionId = `DataSource`
+const applicationName = `DataSource`;
 // Create or open the database
 const db = new sqlite3.Database(dbPath, (err) => {
     if (err) {
-        consoleErrorOut(sessionId,"❌ Database connection failed:", err.message);
+        consoleErrorOut(applicationName,``,"❌ Database connection failed:", err.message);
     } else {
-        consoleLogOut(sessionId,"✅ Connected to SQLite database");
+        consoleLogOut(applicationName,``,"✅ Connected to SQLite database");
     }
 });
 
