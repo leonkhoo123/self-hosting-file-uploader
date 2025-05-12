@@ -6,7 +6,7 @@ const { consoleLogOut, consoleErrorOut } = require("./logger"); // import custom
 const applicationName = `Server`;
 const app = express();
 const PORT = 3000;
-const chunkSize = process.env.CHUNK_SIZE || 7 // 7MB per chunk
+const chunkSize = process.env.CHUNK_SIZE || 3 // 3MB per chunk default
 const envMode = process.env.ENV || 'prod'; // fallback to 'production'
 
 const uploads = require("./routes/uploads");
@@ -29,9 +29,9 @@ cron.schedule("0 5 * * *", uploads.clearTempUploads, {
 
 // Start server
 app.listen(PORT, () => {
-    consoleLogOut(applicationName,``, `Starting server with env: ${envMode}, chunk size: ${chunkSize}MB`);
+    consoleLogOut(applicationName,`system_log`, `Starting server with env: ${envMode}, chunk size: ${chunkSize}MB`);
     uploads.clearTempUploads();
     uploads.loadUploadSessions();
-    consoleLogOut(applicationName,``, `Server is running on http://localhost:${PORT}`);
+    consoleLogOut(applicationName,`system_log`, `Server is running on http://localhost:${PORT}`);
 });
 

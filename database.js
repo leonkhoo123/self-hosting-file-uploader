@@ -22,9 +22,9 @@ const applicationName = `DataSource`;
 // Create or open the database
 const db = new sqlite3.Database(dbPath, (err) => {
     if (err) {
-        consoleErrorOut(applicationName,``,"❌ Database connection failed:", err.message);
+        consoleErrorOut(applicationName,`system_log`,"❌ Database connection failed:", err.message);
     } else {
-        consoleLogOut(applicationName,``,"✅ Connected to SQLite database");
+        consoleLogOut(applicationName,`system_log`,"✅ Connected to SQLite database");
     }
 });
 

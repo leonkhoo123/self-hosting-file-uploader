@@ -6,7 +6,7 @@ const { consoleLogOut, consoleErrorOut } = require("./logger"); // import custom
 const hostname = process.env.HOSTNAME || "localhost:3000";
 const axios = require('axios');
 const uploadBasePath = 'uploads'
-
+const applicationName = `Generator`;
 app.use(express.json());
 app.use(express.static("public/generator"));
 app.use("/style.css", (req, res) => {
@@ -23,8 +23,8 @@ function generateBase36Id(length = 32) {
 function callReloadCache(){
     // Call the reload-cache API after successful insertion
     axios.post(`http://localhost:3000/${uploadBasePath}/reload-cache`)
-        .then(response => consoleLogOut(`Generator`, `${response.data.message}`))
-        .catch(error => consoleErrorOut(`Generator`, `Error reloading cache: ${error.message}`));
+        .then(response => consoleLogOut(applicationName,`system_log`, `${response.data.message}`))
+        .catch(error => consoleErrorOut(applicationName,`system_log`, `Error reloading cache: ${error.message}`));
 }
 
 // 1. Generate Secure URL
@@ -93,5 +93,5 @@ app.get('/paths', (req, res) => {
 });
 
 app.listen(port, () => {
-    consoleLogOut(`Generator`,`Server running on port ${port}`);
+    consoleLogOut(applicationName,`system_log`,`Server running on port ${port}`);
 });

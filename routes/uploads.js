@@ -46,14 +46,14 @@ let uploadSessions = {}; // In-memory cache
 const loadUploadSessions = () => {
     db.all(`SELECT session_id, startTime, endTime, path FROM url_session WHERE status = "A"`, [], (err, rows) => {
         if (err) {
-            consoleErrorOut(`ReloadCache`,``, `Error loading sessions into cache: ${err.message}`);
+            consoleErrorOut(`ReloadCache`,`system_log`, `Error loading sessions into cache: ${err.message}`);
             return;
         }
         uploadSessions = {}; // Reset cache
         rows.forEach(row => {
             uploadSessions[row.session_id] = row;
         });
-        consoleLogOut(`ReloadCache`,``, `Cache reloaded`);
+        consoleLogOut(`ReloadCache`,`system_log`, `Cache reloaded`);
     });
 };
 
@@ -63,7 +63,7 @@ const checkUploadAuth = (req, res, next) => {
     const session = uploadSessions[id];
 
     if (!session) {
-        consoleLogOut(`UploadAuth`,``, `Received forbidden access with URL: ${id}`);
+        consoleLogOut(`UploadAuth`,`system_log`, `Received forbidden access with URL: ${id}`);
         return res.status(400).json({
             status: 400,
             message: "Invalid URL",
@@ -74,16 +74,16 @@ const checkUploadAuth = (req, res, next) => {
     const currentTime = Date.now();
 
     if (currentTime < session.startTime || currentTime > session.endTime) {
-        consoleLogOut(`UploadAuth`,``, `Expired or invalid access for URL: ${id}`);
+        consoleLogOut(`UploadAuth`,`system_log`, `Expired or invalid access for URL: ${id}`);
         return res.status(400).json({ error: "URL expired or not yet activated" });
     }
 
     // Store the upload path in request object for later use
     req.uploadPath = session.path;
-    // consoleLogOut(`UploadAuth`,``, `Valid access granted for URL: ${id}`);
+    // consoleLogOut(`UploadAuth`,`system_log`, `Valid access granted for URL: ${id}`);
     
     if(isClearing){
-        consoleLogOut(`UploadAuth`,``, `Clearing in process, stopping request from URL: ${id}`);
+        consoleLogOut(`UploadAuth`,`system_log`, `Clearing in process, stopping request from URL: ${id}`);
         return res.status(400).json({
             status: 400,
             message: "Maintanance in progress, please try again later",
@@ -282,12 +282,12 @@ async function getUniqueFilename(originalFilename, nas_mount_location, req_sessi
 function clearTempUploads() {
     if (isClearing) return; // Prevent duplicate cleanup runs
 
-    consoleLogOut(`Cleanner`,``, `Starting nightly cleanup...`);
+    consoleLogOut(`Cleanner`,`system_log`, `Starting nightly cleanup...`);
     isClearing = true;
 
     fs.readdir(uploadDir, (err, files) => {
         if (err) {
-            consoleErrorOut(`Cleanner`,``, `Error reading temp_uploads directory: ${err}`);
+            consoleErrorOut(`Cleanner`,`system_log`, `Error reading temp_uploads directory: ${err}`);
             isClearing = false;
             return;
         }
@@ -295,7 +295,7 @@ function clearTempUploads() {
             const filePath = path.join(uploadDir, file);
             fs.stat(filePath, (err, stats) => {
                 if (err) {
-                    consoleErrorOut(`Cleanner`,``, `Failed to read ${file}: ${err}`);
+                    consoleErrorOut(`Cleanner`,`system_log`, `Failed to read ${file}: ${err}`);
                     return;
                 }
 
@@ -303,20 +303,20 @@ function clearTempUploads() {
                     // Remove directories recursively
                     fs.rm(filePath, { recursive: true, force: true }, (err) => {
                         if (err) {
-                            consoleErrorOut(`Cleanner`,``, `Failed to delete directory ${file}: ${err}`);
+                            consoleErrorOut(`Cleanner`,`system_log`, `Failed to delete directory ${file}: ${err}`);
                         }
                     });
                 } else {
                     // Remove files
                     fs.unlink(filePath, (err) => {
                         if (err) {
-                            consoleErrorOut(`Cleanner`,``, `Failed to delete ${file}: ${err}`);
+                            consoleErrorOut(`Cleanner`,`system_log`, `Failed to delete ${file}: ${err}`);
                         }
                     });
                 }
             });
         });
-        consoleLogOut(`Cleanner`,``, `Nightly cleanup completed.`);
+        consoleLogOut(`Cleanner`,`system_log`, `Nightly cleanup completed.`);
         isClearing = false;
     });
 }
