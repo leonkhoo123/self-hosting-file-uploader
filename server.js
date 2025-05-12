@@ -1,7 +1,6 @@
 const cron = require("node-cron");
 const express = require("express");
 const path = require("path");
-const fs = require("fs");
 const { consoleLogOut, consoleErrorOut } = require("./logger"); // import custom logger
 const applicationName = `Server`;
 const app = express();
@@ -14,10 +13,11 @@ const uploads = require("./routes/uploads");
 
 app.use("/uploads", uploads.router);
 app.use("/uploads", express.static(path.join(__dirname, "public/uploader"))); // static page
-
 // app.use("/share", shareRouter);
 
-// 6. Shared style.css served explicitly
+
+
+//Shared style.css
 app.use(`/style.css`, (req, res) => {
     res.sendFile(path.join(__dirname, "public/style.css"));
 });

@@ -7,7 +7,7 @@ const router = express.Router();
 const { consoleLogOut, consoleErrorOut } = require("../logger"); // import custom logger
 const applicationName = `Uploads`;
 const servername = "Leon NAS"
-const chunkSize = process.env.CHUNK_SIZE || 7 // 7MB per chunk
+const chunkSize = process.env.CHUNK_SIZE || 3 // 3 MB per chunk
 let isClearing = false;
 
 let NAS_PATH;

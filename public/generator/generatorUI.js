@@ -15,7 +15,8 @@ document.addEventListener("DOMContentLoaded", function () {
     const isHttps = window.location.href.startsWith("https");
     const protocol = isHttps ? "https" : "http";
     const host = window.location.host;
-    const urlPath = `${protocol}://${host}/`;
+    const basePath = `generator`
+    const urlPath = `${protocol}://${host}/${basePath}/`;
     const timezone = 8 * 60 //GMT+8
 
     let tempPath = ""; // Temporary path storage

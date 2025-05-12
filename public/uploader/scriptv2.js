@@ -18,7 +18,7 @@ document.addEventListener("DOMContentLoaded", function () {
     const titleArea = document.getElementById("titleArea");
     const uploadHeaderHolder = document.getElementById("uploadHeaderHolder");
     const listlength = 100; 
-    let chunkSize = 7; // 7MB default
+    let chunkSize = 3; // 3MB default
     let uploadState = false;
     let giveup = false;
     selectFilesBtn.addEventListener("click", () => fileInput.click());
@@ -49,7 +49,7 @@ document.addEventListener("DOMContentLoaded", function () {
         if (result.sessionId) {
             localStorage.setItem("sessionId", result.sessionId);
         }
-        chunkSize = result.chunkSize || 7; // Set chunk size from server response (default 7MB)
+        chunkSize = result.chunkSize || 3; // Set chunk size from server response (default 3MB)
 
         // Attach the event listener AFTER adding the button to the DOM
         document.getElementById("uploadBtn").addEventListener("click", startUpload);
