@@ -79,7 +79,7 @@ ENV=local node server.js
 | ------------ | ------------------------------------------------------------------------------------------------ |
 | `ENV`        | Set to `prod` to mount real server directory to (`/mnt/nas_uploads`). `local` for debug/testing. |
 | `CHUNK_SIZE` | Maximum file chunk size in MB (e.g., `3` for 3MB). Smaller values help with poor networks.       |
-| `HOSTNAME`   | Used in admin to generate full upload URLs (e.g., `https://mydomain.com`).                       |
+| `HOSTNAME`   | Used in admin to generate full upload URLs (e.g., `https://mydomain.com/uploads/?id=<generated-id>`).                       |
 
 
 <br>
@@ -109,7 +109,7 @@ docker save -o synology-upload-mini-v1.tar synology-upload-mini:v1
 
 ## 🧱 Container Setup (Production Mode)
 
-If using in `ENV=prod` mode (default `prod` if not mentioned):
+If using in `ENV=prod` mode (default `prod` if not specified):
 
 * Ensure your local directory is mounted into `/mnt/nas_uploads` inside the container.
 * Example `docker run` (simplified):
