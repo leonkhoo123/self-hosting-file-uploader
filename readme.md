@@ -77,7 +77,7 @@ ENV=local node server.js
 
 | Variable     | Description                                                                                      |
 | ------------ | ------------------------------------------------------------------------------------------------ |
-| `ENV`        | Set to `prod` to mount real NAS directory (`/mnt/nas_uploads`). `local` for debug and testing.   |
+| `ENV`        | Set to `prod` to mount real server directory to (`/mnt/nas_uploads`). `local` for debug/testing. |
 | `CHUNK_SIZE` | Maximum file chunk size in MB (e.g., `3` for 3MB). Smaller values help with poor networks.       |
 | `HOSTNAME`   | Used in admin to generate full upload URLs (e.g., `https://mydomain.com`).                       |
 
@@ -100,16 +100,16 @@ docker build -t synology-upload-mini:v1 .
 docker save -o synology-upload-mini-v1.tar synology-upload-mini:v1
 ```
 
-> Useful if you want to manually import the image on your NAS without using Docker Hub.
+> Useful if you want to manually import the image on your server without using Docker Hub.
 
 
 <br>
 <br>
 
 
-## 🧱 NAS Setup (Production Mode)
+## 🧱 Container Setup (Production Mode)
 
-If using in `prod` mode:
+If using in `ENV=prod` mode (default `prod` if not mentioned):
 
 * Ensure your local directory is mounted into `/mnt/nas_uploads` inside the container.
 * Example `docker run` (simplified):
