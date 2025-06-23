@@ -1,6 +1,6 @@
 const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
-const { consoleLogOut, consoleErrorOut } = require("./logger"); // import custom logger
+const { consoleLogOut, consoleErrorOut } = require("./servers/logger"); // import custom logger
 let NAS_PATH;
 const envMode = process.env.ENV || 'prod'; // fallback to 'production'
 switch (envMode) {

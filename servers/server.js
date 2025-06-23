@@ -8,18 +8,23 @@ const PORT = 3000;
 const chunkSize = process.env.CHUNK_SIZE || 3 // 3MB per chunk default
 const envMode = process.env.ENV || 'prod'; // fallback to 'production'
 
-const uploads = require("./routes/uploads");
-// const shareRouter = require("./routes/share");
+const uploads = require("../routes/uploads");
+const shareRouter = require("../routes/share");
 
 app.use("/uploads", uploads.router);
-app.use("/uploads", express.static(path.join(__dirname, "public/uploader"))); // static page
-// app.use("/share", shareRouter);
+app.use("/uploads", express.static(path.join(__dirname, "../public/uploader"))); // static page
+app.use("/share", shareRouter.router);
+app.use("/share", express.static(path.join(__dirname, "../public/share"))); // static page
 
+// Default root to uploads
+app.get("/", (req, res) => {
+  res.redirect("/uploads");
+});
 
 
 //Shared style.css
 app.use(`/style.css`, (req, res) => {
-    res.sendFile(path.join(__dirname, "public/style.css"));
+    res.sendFile(path.join(__dirname, "../public/style.css"));
 });
 
 // Schedule cleanup every night at 5 AM

@@ -2,7 +2,7 @@ module.exports = {
     apps: [
         {
             name: "server",
-            script: "./server.js",
+            script: "./severs/server.js",
             watch: true,
             ignore_watch: [
                 "upload_ids.db",
@@ -20,7 +20,7 @@ module.exports = {
         },
         {
             name: "adminserver",
-            script: "./adminserver.js",
+            script: "./severs/adminserver.js",
             watch: true,
             ignore_watch: [
                 "upload_ids.db",
