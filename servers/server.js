@@ -37,6 +37,7 @@ app.listen(PORT, () => {
     consoleLogOut(applicationName,`system_log`, `Starting server with env: ${envMode}, chunk size: ${chunkSize}MB`);
     uploads.clearTempUploads();
     uploads.loadUploadSessions();
+    shareRouter.loadUploadSessions();
     consoleLogOut(applicationName,`system_log`, `Server is running on http://localhost:${PORT}`);
 });
 

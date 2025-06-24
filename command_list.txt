@@ -1,1 +1,14 @@
+// get file structure for gpt lol (i am not full vibe coder)
 tree -I 'node_modules|.git'
+
+
+// manual build css (css wont build automatically for some reason)
+npx tailwindcss -i ./styles/tailwind.css -o ./public/style.css --minify
+
+
+// build docker image
+docker build -t synology-upload-mini:v1 .
+
+
+// export the image
+docker save -o synology-upload-mini.tar synology-upload-mini:v1

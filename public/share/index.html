@@ -1,23 +1,25 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Share!!!</title>
     <!-- <script src="https://cdn.tailwindcss.com"></script> -->
-    <link href="/style.css" rel="stylesheet">
+    <link href="/style.css" rel="stylesheet" />
 </head>
+
 <body class="bg-gray-100 flex flex-col items-center py-10">
-    <div class = "w-11/12 sm:max-w-3xl">
+    <div class="w-11/12 sm:max-w-3xl">
         <div class="w-full rounded-lg p-2">
             <!-- Leon NAS Title -->
             <div id="titleArea" class="flex-col mt-5 mb-6">
-                <h1  class="text-4xl font-bold text-gray-800">Share!!!</h1>
+                <h1 class="text-4xl font-bold text-gray-800">Leon NAS</h1>
                 <span class="text-xs text-gray-500"></span>
             </div>
-    
-            <!-- Health Check & Upload Button -->
-            <div id=healthcheck class="flex justify-between items-center">
+
+            <!-- Health Check -->
+            <div id="healthcheck" class="flex justify-between items-center">
                 <div class="flex flex-col pl-1">
                     <div class="flex items-center space-x-2">
                         <span class="w-3 h-3 bg-gray-400 rounded-full"></span>
@@ -25,34 +27,34 @@
                     </div>
                     <span class="hidden text-xs text-gray-500 pt-1 pl-5">Session ID: <span id="sessionId"></span></span>
                 </div>
-                <button id="uploadBtn" class="bg-green-500 text-white px-2 py-2 rounded sm:px-3 sm:py-2 hidden">Upload Now</button>
-                <button id="cancelBtn" class="bg-gray-500 text-white px-2 py-2 rounded sm:px-3 sm:py-2 hidden">Cancel</button>
             </div>
         </div>
-    
+
         <div class="w-full bg-white shadow-md rounded-lg p-4 mt-5">
-            <div id=uploadHeaderHolder class="flex justify-between items-center">
-                <h2 id="uploadHeader" class="text-base font-semibold">Select Files to Upload</h2>
-                <button id="selectFilesBtn" class="bg-blue-500 text-white px-3 py-1 rounded">Select Files</button>
+            <div id="shareHeaderHolder" class="flex justify-between items-center">
             </div>
             <ul id="fileList" class="text-sm text-gray-700 space-y-2">
                 <!-- File items will be inserted here -->
-                <!-- <div id="list-${file.name}" class="flex justify-between items-center p-2 rounded bg-gray-100">
-                    <span id= filename-${file.name} class = "w-full overflow-hidden text-ellipsis whitespace-nowrap mr-3">lakjsdofijojinalskdnjoiasdvklmaklsdf.mp4</span>
+                <div id="list-${file.name}" class="flex justify-between items-center p-2 rounded bg-gray-100">
+                    <span id="filename-${file.name}"
+                        class="w-full overflow-hidden text-ellipsis whitespace-nowrap mr-3">myvideo.mp4</span>
                     <div class="hidden w-5/12 sm:w-6/12 h-2 bg-gray-300 rounded overflow-hidden">
                         <div id="progress-${file.name}" class="h-full bg-gray-500 w-0"></div>
                     </div>
-                    <div class="hidden flex w-3/12 sm:w-2/12 overflow-hidden justify-center items-center">
-                        <span id="status-${file.name}"  class="text-sm text-gray-600 ml-2">Pending</span>
+                    <div class="flex w-3/12 sm:w-2/12 overflow-hidden justify-center items-center">
+                        <button id="downloadFileBtn" class="bg-green-700 text-white px-3 py-1 rounded">
+                            Download
+                        </button>
                     </div>
-                </div> -->
+                </div>
             </ul>
         </div>
     </div>
-    
-    <input type="file" id="fileInput" multiple class="hidden">
+
+    <input type="file" id="fileInput" multiple class="hidden" />
     <p id="message" class="mt-2 text-gray-700"></p>
-    
-    <script src="scriptv2.js"></script>
+
+    <script src="shareUI.js"></script>
 </body>
+
 </html>
