@@ -16,7 +16,8 @@ document.addEventListener("DOMContentLoaded", function () {
     const titleArea = document.getElementById("titleArea");
     const downloadFileBtn = document.getElementById("downloadFileBtn");
     let chunkSize = 3; // 3MB default
-    downloadFileBtn.addEventListener("click", () => handleFileDownload());
+    // downloadFileBtn.addEventListener("click", () => handleFileDownload());
+    downloadFileBtn.addEventListener("click", () => streamDownload());
 
     console.log("Download URL:", downloadURL);
     fetch(healthCheckURL, { method: "GET" })
@@ -51,46 +52,88 @@ document.addEventListener("DOMContentLoaded", function () {
             document.getElementById("healthcheck").textContent = `${error.message}`;
         });
 
-    async function handleFileDownload() {
+    async function streamDownload() {
+        // Use a placeholder URL for demonstration. You would replace this
+        // with a real URL to a large file.
+        // const fileUrl = 'https://speed.hetzner.de/100MB.bin'; // A public test file
+        const suggestedFilename = 'test.mp4'; // Default file name if not provided
+
+        const statusElement = document.getElementById('status');
+        statusElement.textContent = 'Preparing to download...';
+
+        // Check if the File System Access API is supported.
+        if ('showSaveFilePicker' in window) {
+            // streamDownload(downloadURL, fileName);
+        } else {
+            let expMsg = 'Your browser does not support the File System Access API. Please use a modern browser like Chrome, Edge, or a recent version of Firefox.';
+            // alert(expMsg);
+            statusElement.textContent = expMsg;
+            return;
+        }
+
         try {
-            // 1. Prompt user to pick save location and filename
+            // 1. Prompt user for a save location and get a file handle.
+            // This will open the native "Save As" dialog.
+            statusElement.textContent = 'Waiting for you to select a save location...';
             const fileHandle = await window.showSaveFilePicker({
-                suggestedName: 'video.mp4', // or dynamically set this
-                types: [
-                    {
-                        description: 'MP4 Video',
-                        accept: { 'video/mp4': ['.mp4'] }
-                    }
-                ]
+                suggestedName: suggestedFilename,
             });
 
-            // 2. Create writable stream to selected file
+            // 2. Create a writable stream to write data to the file.
+            // This stream is linked to the file handle.
             const writableStream = await fileHandle.createWritable();
 
-            // 3. Start fetching the file from your backend
+            // 3. Fetch the data with streaming in mind.
+            // The response.body is a ReadableStream.
+            statusElement.textContent = 'Fetching file from the server...';
             const response = await fetch(downloadURL);
-            if (!response.ok || !response.body) {
-                throw new Error(`Download failed with status ${response.status}`);
+
+            // Check if the network request was successful (HTTP status code 200-299).
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
             }
 
-            // 4. Pipe stream directly from server to file
+            // 4. Pipe the readable stream from the fetch response to the writable stream.
+            // This is the core of the streaming process. Data chunks are automatically
+            // read from the network and written to the file on disk.
+            statusElement.textContent = 'Downloading in progress...';
             const reader = response.body.getReader();
+            const writer = writableStream.getWriter();
+
+            let downloadedBytes = 0;
+            const totalBytes = response.headers.get('content-length') ? parseInt(response.headers.get('content-length'), 10) : null;
+
+            // Loop to read and write chunks
             while (true) {
-                console.log("Reading chunk...");
                 const { done, value } = await reader.read();
-                if (done) break;
-                await writableStream.write(value);
+                if (done) {
+                    break; // All data has been read
+                }
+                await writer.write(value);
+                downloadedBytes += value.length;
+
+                // Update status with progress (if total size is known)
+                if (totalBytes) {
+                    const progress = ((downloadedBytes / totalBytes) * 100).toFixed(0);
+                    let downloadedMb = (downloadedBytes / 1024 / 1024).toFixed(2);; // Convert bytes to MB
+                    let totalMb = (totalBytes / 1024 / 1024).toFixed(2);; // Convert bytes
+                    statusElement.textContent = `Downloading... ${progress}% (${downloadedMb}MB / ${totalMb}MB)`;
+                }// } else {
+                //     statusElement.textContent = `Downloading... ${downloadedBytes} bytes downloaded`;
+                // }
             }
 
-            // 5. Close the file
-            await writableStream.close();
-            alert("Download completed.");
-        } catch (err) {
-            console.error("Download error:", err);
-            alert("Download failed: " + err.message);
+            // Finalize the writing process.
+            await writer.close();
+
+            statusElement.textContent = 'Download complete!';
+            console.log('Download complete!');
+
+        } catch (error) {
+            console.error('Download failed:', error);
+            statusElement.textContent = `Download failed: ${error.message}`;
         }
     }
-
 
     function adler32(buffer) {
         let MOD_ADLER = 65521;
