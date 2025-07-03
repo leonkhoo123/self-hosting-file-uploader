@@ -140,6 +140,7 @@ docker run -d \
 ## 📌 Roadmap Ideas
 
 * [ ] Add file sharing support (cloud drive style)
+* [ ] Add file browsing interface for file sharing
 
 <br>
 <br>
